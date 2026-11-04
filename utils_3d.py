@@ -18,10 +18,12 @@ Typical use inside a Blender script:
     u.export_all(basename="my_design")                 # .blend copy + STLs
 
 Sections
-    1. Scene / collection setup
-    2. Primitive builders (box, cylinder, frustum, slot, revolved profile)
-    3. Modifier wrappers (bevel, boolean, array, solidify) -- always applied/baked
-    4. Print-oriented feature builders (hollow box, boss, holes, countersink...)
+    1. Scene / collection setup (collections, show-only / frame view, script folder)
+    2. Primitive builders (box, cylinder, frustum, slot, stadium profile, prism along any axis,
+       revolved profile)
+    3. Modifier wrappers (bevel, boolean, array, solidify, multi-radius edge rounding) -- always
+       applied/baked
+    4. Print-oriented feature builders (hollow box, boss, holes, countersink, lid lip, finger notch...)
     5. Layout helpers (grid / line / circle / mirror positions)
     6. Transforms (move, rotate, flip, drop to bed, arrange, join, duplicate)
     7. Inspection (bounding box, manifold check, print report)
@@ -29,7 +31,8 @@ Sections
     9. Tolerances, screw/insert tables, Params
    10. Screw / insert / nut / magnet features
    11. Snap fits, vents, text
-   12. Print-quality checks (min wall, overhang, bed fit, overlaps, orientation, split)
+   12. Print-quality checks (min wall, overhang, bed fit, overlaps incl. pose sweeps,
+       orientation, split)
 
 Primitives are built with bmesh (no bpy.ops, no selection/context needed), and each
 object's origin is placed at its geometric centre, like Blender's own primitives.
@@ -111,6 +114,46 @@ def link_only(obj, coll=None):
     return obj
 
 
+def _walk_layer_collections(layer_coll):
+    for lc in layer_coll.children:
+        yield lc
+        yield from _walk_layer_collections(lc)
+
+
+def show_only_collection(name):
+    """Hide every other collection in the viewport (builds that sit at the same coordinates
+    would otherwise overlap); `name` itself is shown."""
+    for lc in _walk_layer_collections(bpy.context.view_layer.layer_collection):
+        lc.hide_viewport = lc.collection.name != name
+
+
+def frame_all():
+    """Frame everything in every open 3D viewport (View All). No-op when running headless."""
+    wm = bpy.context.window_manager
+    for win in (wm.windows if wm else []):
+        for area in win.screen.areas:
+            if area.type == 'VIEW_3D':
+                region = next((r for r in area.regions if r.type == 'WINDOW'), None)
+                if region:
+                    with bpy.context.temp_override(window=win, area=area, region=region):
+                        bpy.ops.view3d.view_all()
+
+
+def script_dir(name=None):
+    """Folder of the calling script. Blender's text editor only gives a bare __file__, so the
+    open texts are searched for a file called `name` (default: the caller's file name) first;
+    then the caller's own path; then the current directory."""
+    import sys
+    caller = sys._getframe(1).f_code.co_filename
+    base = os.path.basename(name or caller)
+    for t in bpy.data.texts:
+        if t.filepath and os.path.basename(t.filepath) == base:
+            return os.path.dirname(bpy.path.abspath(t.filepath))
+    if os.path.isabs(caller) and os.path.isfile(caller):
+        return os.path.dirname(caller)
+    return os.getcwd()
+
+
 def _new_object(name, bm, location, coll):
     """Turn a bmesh into a linked mesh object (frees the bmesh)."""
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
@@ -128,8 +171,12 @@ def _new_object(name, bm, location, coll):
 # =====================================================================
 
 def make_box(name, x_min, x_max, y_min, y_max, z_min, z_max, coll=None):
-    """Axis-aligned box from min/max coordinates (the 'stock box' of the RC case)."""
-    size = (x_max - x_min, y_max - y_min, z_max - z_min)
+    """Axis-aligned box from min/max coordinates (the 'stock box' of the RC case).
+    Each min/max pair may be given in either order (handy for features mirrored with a sign)."""
+    x_min, x_max = sorted((x_min, x_max))
+    y_min, y_max = sorted((y_min, y_max))
+    z_min, z_max = sorted((z_min, z_max))
+    size =(x_max - x_min, y_max - y_min, z_max - z_min)
     center = ((x_min + x_max) / 2, (y_min + y_max) / 2, (z_min + z_max) / 2)
     bm = bmesh.new()
     bmesh.ops.create_cube(bm, size=1.0)
@@ -194,10 +241,11 @@ def make_cone(name, r_bottom, r_top, z_min, z_max, x=0.0, y=0.0, verts=32, coll=
     return make_frustum_between(name, r_bottom, r_top, (x, y, z_min), (x, y, z_max), verts, coll)
 
 
-def make_slot(name, p0, p1, width, z_min, z_max, arc_segments=12, coll=None):
-    """Stadium / obround prism (a slot with round ends), extruded along Z.
-    p0, p1 = (x, y) centres of the two end arcs. Good for USB / switch / cable cut-outs.
-    If p0 == p1 it is a plain cylinder."""
+def stadium_profile(p0, p1, width, arc_segments=12):
+    """2D outline of a stadium / obround (a slot with round ends): p0, p1 = centres of the two
+    end arcs, width = slot width (= 2 x arc radius). Returns [(u, v), ...] for make_prism or
+    make_slot. Horizontal slot of overall size L x H centred on (cx, cz):
+    stadium_profile((cx - (L - H) / 2, cz), (cx + (L - H) / 2, cz), H)."""
     r = width / 2.0
     (x0, y0), (x1, y1) = p0, p1
     ang = math.atan2(y1 - y0, x1 - x0) if (x0, y0) != (x1, y1) else 0.0
@@ -208,6 +256,40 @@ def make_slot(name, p0, p1, width, z_min, z_max, arc_segments=12, coll=None):
     for k in range(arc_segments + 1):          # cap around p0
         a = ang + math.pi / 2 + math.pi * k / arc_segments
         pts.append((x0 + r * math.cos(a), y0 + r * math.sin(a)))
+    return pts
+
+
+def make_prism(name, pts, axis, lo, hi, location=(0, 0, 0), coll=None):
+    """Extrude a closed 2D polygon along a world axis from lo to hi.
+    pts are given in the two OTHER axes in XYZ order: axis 'X' -> (y, z), 'Y' -> (x, z),
+    'Z' -> (x, y). Vertices are placed as given (origin at `location`, not the centre)."""
+    i = "XYZ".index(axis.upper())
+    others = [k for k in range(3) if k != i]
+
+    def p3(a, b, t):
+        p = [0.0, 0.0, 0.0]
+        p[others[0]], p[others[1]], p[i] = a, b, t
+        return p
+
+    bm = bmesh.new()
+    front = [bm.verts.new(p3(a, b, lo)) for a, b in pts]
+    back = [bm.verts.new(p3(a, b, hi)) for a, b in pts]
+    n = len(pts)
+    for k in range(n):
+        j = (k + 1) % n
+        bm.faces.new((front[k], front[j], back[j], back[k]))
+    bm.faces.new(front)
+    bm.faces.new(list(reversed(back)))
+    return _new_object(name, bm, location, coll)
+
+
+def make_slot(name, p0, p1, width, z_min, z_max, arc_segments=12, coll=None):
+    """Stadium / obround prism (a slot with round ends), extruded along Z.
+    p0, p1 = (x, y) centres of the two end arcs. Good for USB / switch / cable cut-outs.
+    If p0 == p1 it is a plain cylinder. For a slot through a side wall use
+    make_prism(name, stadium_profile(...), 'X' or 'Y', lo, hi)."""
+    (x0, y0), (x1, y1) = p0, p1
+    pts = stadium_profile(p0, p1, width, arc_segments)
     cx, cy, cz = (x0 + x1) / 2, (y0 + y1) / 2, (z_min + z_max) / 2
     h = (z_max - z_min) / 2
     bm = bmesh.new()
@@ -336,12 +418,34 @@ def round_edges(obj, radius, where='ALL', segments=6, profile=0.5):
     return obj
 
 
+def round_edges_multi(obj, roundings, segments=6):
+    """Several round_edges passes in order, each with its own radius / edge set / smoothness:
+    roundings = [(radius, where), (radius, where, segments), ...]; `segments` is the default.
+    Typical shell: [(10, 'VERTICAL', 8), (3, 'BOTTOM', 4), (0.6, 'TOP', 4)]
+    (corners first, then the rims, so the rims follow the rounded corners)."""
+    for item in roundings:
+        r, where = item[0], item[1]
+        seg = item[2] if len(item) > 2 else segments
+        round_edges(obj, r, where, seg)
+    return obj
+
+
+def _round(obj, radius, where, segments):
+    """radius = number (with `where`) or a round_edges_multi list; None/0 = no rounding."""
+    if isinstance(radius, (list, tuple)):
+        return round_edges_multi(obj, radius, segments)
+    if radius:
+        return round_edges(obj, radius, where, segments)
+    return obj
+
+
 def make_rounded_box(name, x_min, x_max, y_min, y_max, z_min, z_max, radius,
                      where='ALL', segments=6, coll=None):
     """Box with rounded edges in one call, e.g. where='VERTICAL' for rounded corners
-    in plan view only (flat top and bottom), 'TOP' for a softened top rim."""
+    in plan view only (flat top and bottom), 'TOP' for a softened top rim.
+    radius may also be a list for round_edges_multi (different radius per edge set)."""
     obj = make_box(name, x_min, x_max, y_min, y_max, z_min, z_max, coll)
-    return round_edges(obj, radius, where, segments)
+    return _round(obj, radius, where, segments)
 
 
 def boolean_apply(obj, cutter, operation='DIFFERENCE', delete_cutter=True, solver='EXACT'):
@@ -421,10 +525,16 @@ def make_hollow_box(name, x_min, x_max, y_min, y_max, z_min, z_max, wall=2.5,
     (defaults to wall). bevel = rounding width in mm (None = sharp);
     bevel_edges = which outer edges to round ('ALL', 'VERTICAL', 'TOP', ... see round_edges).
     inner_radius = fillet radius for the INSIDE cavity corners (inner_edges selects which,
-    default the four vertical ones) -- stronger, easier to print, nicer to look at."""
+    default the four vertical ones) -- stronger, easier to print, nicer to look at.
+    bevel and inner_radius may also be round_edges_multi lists, e.g.
+    bevel=[(10, 'VERTICAL', 8), (3, 'BOTTOM', 4), (0.6, 'TOP', 4)],
+    inner_radius=[(7.6, 'VERTICAL', 8), (1.0, 'BOTTOM', 4)] (bevel_edges / inner_edges are then
+    ignored). overshoot = how far the cavity cutter pokes out of the open face."""
     floor = wall if floor is None else floor
     obj = make_box(name, x_min, x_max, y_min, y_max, z_min, z_max)
-    if bevel:
+    if isinstance(bevel, (list, tuple)):
+        round_edges_multi(obj, bevel, bevel_segments)
+    elif bevel:
         if bevel_edges == 'ALL':
             apply_bevel(obj, bevel, bevel_segments)
         else:                      # selective: 'VERTICAL', 'TOP', 'BOTTOM', ... see round_edges
@@ -440,8 +550,7 @@ def make_hollow_box(name, x_min, x_max, y_min, y_max, z_min, z_max, wall=2.5,
             lo[axis] = [x_min, y_min, z_min][axis] - overshoot
             hi[axis] = [x_max, y_max, z_max][axis] - floor
     cutter = make_box(name + "_cavity_cutter", lo[0], hi[0], lo[1], hi[1], lo[2], hi[2])
-    if inner_radius:
-        round_edges(cutter, inner_radius, inner_edges, bevel_segments)
+    _round(cutter, inner_radius, inner_edges, bevel_segments)
     boolean_diff_apply(obj, cutter)
     return obj
 
@@ -496,13 +605,35 @@ def add_pcb_supports(positions, z_min, z_max, outer_r=2.5, bore_r=1.0, prefix="S
             for i, (x, y) in enumerate(positions, start=1)]
 
 
-def make_lid_lip(name, x_min, x_max, y_min, y_max, z_min, z_max, lip_t=1.2):
-    """Rectangular frame (outer box minus inner box) -- a lid lip / rim that drops into a case."""
+def make_lid_lip(name, x_min, x_max, y_min, y_max, z_min, z_max, lip_t=1.2, corner_r=None,
+                 segments=8):
+    """Rectangular frame (outer box minus inner box) -- a lid lip / rim that drops into a case.
+    corner_r rounds the outer vertical corners (match the cavity's corner radius minus the fit
+    gap); the inner corners get corner_r - lip_t so the frame stays lip_t thick all round."""
     frame = make_box(name, x_min, x_max, y_min, y_max, z_min, z_max)
     cutter = make_box(name + "_cutter", x_min + lip_t, x_max - lip_t, y_min + lip_t, y_max - lip_t,
                       z_min - 1, z_max + 1)
+    if corner_r:
+        round_edges(frame, corner_r, 'VERTICAL', segments)
+        if corner_r - lip_t > 1e-6:
+            round_edges(cutter, corner_r - lip_t, 'VERTICAL', segments)
     boolean_diff_apply(frame, cutter)
     return frame
+
+
+def chord_radius(width, depth):
+    """Radius of the circle whose arc spans `width` and is `depth` deep (sagitta)."""
+    return (width ** 2 / 4 + depth ** 2) / (2 * depth)
+
+
+def cut_finger_notch(obj, p0, p1, width, depth, rim_z, verts=48):
+    """Half-round finger scoop in a horizontal rim at height rim_z: an arc `width` wide at the
+    rim and `depth` deep. p0, p1 = (x, y) points the cutter axis runs between, horizontally
+    through the wall (start outside, stop just past the inner face so the scoop stays in the wall)."""
+    r = chord_radius(width, depth)
+    zc = rim_z - depth + r
+    boolean_diff_apply(obj, make_cylinder_between("_cutter_notch", r, (p0[0], p0[1], zc),
+                                                  (p1[0], p1[1], zc), verts=verts))
 
 
 # =====================================================================
@@ -957,28 +1088,50 @@ def make_magnet_pocket_cutter(name, x, y, z_bottom, dia, thickness, tol=TOL_PRES
 # =====================================================================
 
 def make_prism_xz(name, pts_xz, y_min, y_max, location=(0, 0, 0), coll=None):
-    """Extrude a 2D polygon given as (x, z) points along Y from y_min to y_max."""
-    bm = bmesh.new()
-    front = [bm.verts.new((px, y_min, pz)) for px, pz in pts_xz]
-    back = [bm.verts.new((px, y_max, pz)) for px, pz in pts_xz]
-    n = len(pts_xz)
-    for i in range(n):
-        j = (i + 1) % n
-        bm.faces.new((front[i], front[j], back[j], back[i]))
-    bm.faces.new(front)
-    bm.faces.new(list(reversed(back)))
-    return _new_object(name, bm, location, coll)
+    """Extrude a 2D polygon given as (x, z) points along Y from y_min to y_max
+    (= make_prism(name, pts_xz, 'Y', y_min, y_max))."""
+    return make_prism(name, pts_xz, 'Y', y_min, y_max, location, coll)
+
+
+_DIRS = {'+X': (1, 0), '-X': (-1, 0), '+Y': (0, 1), '-Y': (0, -1)}
 
 
 def make_snap_hook(name, x, y, z_base, width=6.0, length=8.0, thickness=1.2, hook_depth=0.8,
-                   hook_height=1.5, angle_deg=0.0, coll=None):
-    """Cantilever snap hook standing up from z_base. The arm is `thickness` thick (flex direction
-    +X), `length` tall, `width` wide (along Y); the hook tip protrudes `hook_depth` toward +X with a
-    ramp on top for easy insertion and a flat underside that catches. angle_deg turns it about Z.
+                   hook_height=1.5, angle_deg=0.0, coll=None, direction='+X', hanging=False,
+                   pointed=False):
+    """Cantilever snap hook. (x, y, z_base) = root of the arm's BACK face (the face away from the
+    tip), centred across its width. The arm is `thickness` thick in the flex direction, `length`
+    long, `width` wide; the tip protrudes `hook_depth` toward `direction` ('+X' | '-X' | '+Y' | '-Y')
+    with a flat catch face toward the root and a ramp toward the free end for easy insertion.
+    hanging=False: the arm stands UP from z_base; True: it hangs DOWN from z_base (a lid hook).
+    pointed=False: the ramp covers only the tip (flat arm end); True: the ramp runs from the
+    back face at the free end all the way to the tip (a wedge, no flat end).
+    angle_deg additionally turns the object about Z (object rotation, around the root point).
+    To fuse the hook into a part, start it inside the part (z_base a little into the material).
     Rule of thumb: length >= 6 x hook_depth, thickness 1.0-1.5 for PLA/PETG."""
     t, L, hd, hh = thickness, length, hook_depth, hook_height
-    pts = [(0, 0), (t, 0), (t, L - hh), (t + hd, L - hh), (t, L), (0, L)]
-    obj = make_prism_xz(name, pts, -width / 2, width / 2, (x, y, z_base), coll)
+    if pointed:
+        prof = [(0, 0), (t, 0), (t, L - hh), (t + hd, L - hh), (0, L)]
+    else:
+        prof = [(0, 0), (t, 0), (t, L - hh), (t + hd, L - hh), (t, L), (0, L)]
+    try:
+        dx, dy = _DIRS[direction.upper()]
+    except KeyError:
+        raise ValueError(f"direction must be one of {list(_DIRS)}")
+    wx, wy = -dy, dx                           # width direction = Z x direction
+    up = -1.0 if hanging else 1.0
+    bm = bmesh.new()
+    rings = []
+    for side in (-width / 2, width / 2):
+        rings.append([bm.verts.new((uu * dx + side * wx, uu * dy + side * wy, up * s)) for uu, s in prof])
+    a, b = rings
+    n = len(prof)
+    for k in range(n):
+        j = (k + 1) % n
+        bm.faces.new((a[k], a[j], b[j], b[k]))
+    bm.faces.new(a)
+    bm.faces.new(list(reversed(b)))
+    obj = _new_object(name, bm, (x, y, z_base), coll)
     obj.rotation_euler.z = math.radians(angle_deg)
     return obj
 
@@ -1024,8 +1177,9 @@ def cut_hex_vents(obj, nx, ny, across_flats, z_min, z_max, web=1.2, center=(0.0,
 
 
 def make_text(name, text, size=5.0, depth=1.0, x=0.0, y=0.0, z=0.0, align='CENTER',
-              font_path=None, coll=None):
-    """3D text mesh lying in the XY plane, `depth` thick, bottom at z, centred on (x, y)."""
+              font_path=None, coll=None, rot_deg=0.0):
+    """3D text mesh lying in the XY plane, `depth` thick, bottom at z, centred on (x, y).
+    rot_deg turns it about Z (90 = reads along +Y). engrave_text / emboss_text pass it through."""
     cu = bpy.data.curves.new(name, 'FONT')
     cu.body = text
     cu.size = size
@@ -1043,6 +1197,7 @@ def make_text(name, text, size=5.0, depth=1.0, x=0.0, y=0.0, z=0.0, align='CENTE
     bpy.data.curves.remove(cu)
     obj = bpy.data.objects.new(unique_name(name), me)
     obj.location = (x, y, z + depth / 2.0)
+    obj.rotation_euler.z = math.radians(rot_deg)
     return link_only(obj, coll)
 
 
@@ -1182,6 +1337,32 @@ def overlap_volume(a, b):
     bm.free()
     delete_object(ca)
     return vol
+
+
+def overlap_at_offsets(fixed, moving, offsets, ndigits=3):
+    """Overlap (mm3) of `fixed` with a copy of `moving` shifted by each (dx, dy, dz) in offsets --
+    lift tests (latches, drop-in hinges) or a dummy part pushed to its extreme positions.
+    Neither object is changed. Returns {offset tuple: mm3}."""
+    out = {}
+    for off in offsets:
+        probe = duplicate_object(moving, "_probe_offset")
+        translate_objects([probe], off)
+        out[tuple(off)] = round(overlap_volume(fixed, probe), ndigits)
+        delete_object(probe)
+    return out
+
+
+def overlap_at_rotations(fixed, moving, axis, angles, pivot, ndigits=3):
+    """Overlap (mm3) of `fixed` with a copy of `moving` rotated by each angle (degrees) about the
+    world axis ('X'|'Y'|'Z') through `pivot` -- hinge swing test (0 everywhere = free swing).
+    Neither object is changed. Returns {angle: mm3}."""
+    out = {}
+    for ang in angles:
+        probe = duplicate_object(moving, "_probe_rotation")
+        rotate_objects([probe], axis, ang, pivot=pivot)
+        out[ang] = round(overlap_volume(fixed, probe), ndigits)
+        delete_object(probe)
+    return out
 
 
 def find_overlaps(objs, min_mm3=0.01, ignore=None):

@@ -11,7 +11,7 @@ User's words: "a case for Samsung S24 plus that holds the entire phone and has a
 ## General rules
 - **Units:** millimetres. Scene unit system METRIC, scale 0.001, length unit MILLIMETERS (`setup_units_mm()`).
 - **Coordinate system:** origin at the box centre on the print bed. **X** = box width, **Y** = box length, **Z** = up, Z = 0 is the bed. **Hinge on the +X long side. Cable end at −Y.** Both parts are modelled in the **closed pose** (door sitting on the box); the door is then flipped and moved to its print position (see Placement).
-- **Library:** all geometry is built with `utils_3d.py` (found by the script via `UTILS_DIR` / `UTILS_3D_DIR` / parent folders); every Bevel/Boolean is applied, no modifiers remain. One local helper (`make_prism_yz`, a YZ-profile extrusion) is defined in the script because `utils_3d` only has the XZ version.
+- **Library:** all geometry is built with `utils_3d.py` (found by the script via `UTILS_DIR` / `UTILS_3D_DIR` / parent folders); every Bevel/Boolean is applied, no modifiers remain. Only the snap-in hinge helpers (`knuckle_ranges`, `make_stub`, `cut_stub_slit`, `cut_socket`) are local to the script; the hinge test coupon loads them from it.
 - **Files:** `projects/s24plus_phone_box/s24plus_phone_box_description.md` (this spec) and `projects/s24plus_phone_box/s24plus_phone_box_build.py`. The hinge test coupon (`s24plus_hinge_test_*`) reads its hinge values from the build script.
 - **Collection:** `S24P_Phone_Box`.
 - **Printer / material:** 250 × 210 mm bed (Prusa MK4 class, build height taken as 220 mm), PETG.
@@ -57,7 +57,7 @@ Source: **stated** (user said it), **chosen** (user picked from options), **dele
 | Project / object names | `s24plus_phone_box`; `S24P_Box`, `S24P_Door` | chosen / delegated |
 
 ## Part 1 — `S24P_Box`
-- **Construction:** `make_box` X ±45.6, Y ±99.9, Z 0…17.8 → `round_edges` vertical R10 → bottom edges R3 → rim edges R0.6; cavity cutter X ±43.2, Y ±97.5, Z 2.4…22.8 with vertical corners R7.6 and floor edge R1.0, applied with `boolean_diff_apply`.
+- **Construction:** `make_hollow_box` X ±45.6, Y ±99.9, Z 0…17.8, open +Z, wall/floor 2.4 → outer rounding vertical R10 → bottom edges R3 → rim edges R0.6; cavity cutter X ±43.2, Y ±97.5, Z 2.4…22.8 with vertical corners R7.6 and floor edge R1.0, applied with `boolean_diff_apply`.
 - **Added (unioned into the one mesh):**
   - Ribs: X = ±(41.7…43.3), Y = −23…−17 and 57…63, Z 2.3…8.4.
   - Phone stop: |X| = 8…43.3, Y −74.5…−72.5, Z 2.3…8.4.

@@ -95,25 +95,9 @@ boss = u.make_screw_boss("Demo_Boss", BOSS_XY[0], BOSS_XY[1], BOSS_Z[0], BOSS_Z[
 
 # ---------------------------------------------------------------- KEEP: visibility + report
 coll = bpy.data.collections[COLL_NAME]
-
-
-def _walk(layer_coll):
-    for lc in layer_coll.children:
-        yield lc
-        yield from _walk(lc)
-
-
 if HIDE_OTHER_COLLECTIONS:
-    for lc in _walk(bpy.context.view_layer.layer_collection):
-        lc.hide_viewport = lc.collection.name != COLL_NAME
-
-for win in bpy.context.window_manager.windows:          # frame the model (no-op headless)
-    for area in win.screen.areas:
-        if area.type == 'VIEW_3D':
-            region = next((r for r in area.regions if r.type == 'WINDOW'), None)
-            if region:
-                with bpy.context.temp_override(window=win, area=area, region=region):
-                    bpy.ops.view3d.view_all()
+    u.show_only_collection(COLL_NAME)
+u.frame_all()                                           # no-op headless
 
 print({"status": "ok", "collection": COLL_NAME, "object_count": len(coll.objects),
        "objects": sorted(o.name for o in coll.objects)})
