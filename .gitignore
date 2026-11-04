@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Generated print output (rebuild from the scripts; export with EXPORT = True)
+*.stl
+*.3mf
+exports/
+exports_*/
+
+# Blender backups / autosaves
+*.blend1
+*.blend2
