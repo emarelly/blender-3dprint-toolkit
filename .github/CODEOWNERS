@@ -1,0 +1,17 @@
+# Code owners for blender-3dprint-toolkit.
+# GitHub requests a review from the owners below on every pull request that touches matching files.
+# Later lines take precedence over earlier ones for the paths they match.
+
+# Default owner: everything in the repository
+*                                   @emarelly
+
+# Shared library and launcher (changes affect every project)
+/utils_3d.py                        @emarelly
+/run_blender.py                     @emarelly
+
+# Claude Code skill and project instructions
+/.claude/                           @emarelly
+/CLAUDE.md                          @emarelly
+
+# Projects
+/projects/                          @emarelly
