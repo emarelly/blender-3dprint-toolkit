@@ -30,12 +30,18 @@ UTILS_DIR = ""
 
 def _find_utils_dir():
     cands = [UTILS_DIR, os.environ.get("UTILS_3D_DIR", "")]
-    starts = []
     try:
-        starts.append(os.path.dirname(os.path.abspath(__file__)))
+        me = __file__
     except NameError:
-        pass
-    starts += [os.path.dirname(bpy.path.abspath(t.filepath)) for t in bpy.data.texts if t.filepath]
+        me = ""
+    starts = []
+    if me and os.path.isfile(os.path.abspath(me)):
+        starts.append(os.path.dirname(os.path.abspath(me)))
+    # Blender's text editor: __file__ is only the text's name, so the text with that name comes first,
+    # then any other open text (so an unrelated script's folder cannot win)
+    texts = [t for t in bpy.data.texts if t.filepath]
+    texts.sort(key=lambda t: os.path.basename(t.filepath) != os.path.basename(me))
+    starts += [os.path.dirname(bpy.path.abspath(t.filepath)) for t in texts]
     if bpy.data.filepath:
         starts.append(os.path.dirname(bpy.data.filepath))
     starts.append(os.getcwd())
@@ -55,8 +61,13 @@ def _find_utils_dir():
 
 
 _here = _find_utils_dir()
-if _here not in sys.path:
-    sys.path.append(_here)
+if _here in sys.path:
+    sys.path.remove(_here)
+sys.path.insert(0, _here)                  # before any other folder that has a utils_3d.py
+# a utils_3d imported earlier in this Blender session from ANOTHER folder would otherwise be reused
+_cached = sys.modules.get("utils_3d")
+if _cached is not None and os.path.normcase(os.path.dirname(os.path.abspath(getattr(_cached, "__file__", "") or "")))         != os.path.normcase(os.path.abspath(_here)):
+    del sys.modules["utils_3d"]
 
 import importlib
 import utils_3d as u

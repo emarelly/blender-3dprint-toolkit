@@ -64,9 +64,10 @@ def setup_units_mm():
     us.length_unit = 'MILLIMETERS'
 
 
-def use_collection(name, clear=False):
+def use_collection(name, clear=False, parent=None):
     """Get/create collection `name`, link it to the scene and make it the default
-    target for every make_* function. clear=True deletes its existing objects."""
+    target for every make_* function. clear=True deletes its existing objects.
+    parent = name of a collection to nest it in (created and linked to the scene if needed)."""
     global _active_collection
     scene = bpy.context.scene
     coll = bpy.data.collections.get(name)
@@ -74,7 +75,15 @@ def use_collection(name, clear=False):
         coll = bpy.data.collections.new(name)
     elif clear:
         clear_collection(coll)
-    if coll.name not in {c.name for c in scene.collection.children_recursive}:
+    if parent:
+        par = bpy.data.collections.get(parent) or bpy.data.collections.new(parent)
+        if par.name not in {c.name for c in scene.collection.children_recursive}:
+            scene.collection.children.link(par)
+        if coll.name in scene.collection.children:
+            scene.collection.children.unlink(coll)
+        if coll.name not in par.children:
+            par.children.link(coll)
+    elif coll.name not in {c.name for c in scene.collection.children_recursive}:
         scene.collection.children.link(coll)
     _active_collection = coll
     return coll
@@ -122,9 +131,13 @@ def _walk_layer_collections(layer_coll):
 
 def show_only_collection(name):
     """Hide every other collection in the viewport (builds that sit at the same coordinates
-    would otherwise overlap); `name` itself is shown."""
+    would otherwise overlap); `name` itself and the collections nested in it are shown."""
+    keep = {name}
+    coll = bpy.data.collections.get(name)
+    if coll is not None:
+        keep |= {c.name for c in coll.children_recursive}
     for lc in _walk_layer_collections(bpy.context.view_layer.layer_collection):
-        lc.hide_viewport = lc.collection.name != name
+        lc.hide_viewport = lc.collection.name not in keep
 
 
 def frame_all():
@@ -448,12 +461,15 @@ def make_rounded_box(name, x_min, x_max, y_min, y_max, z_min, z_max, radius,
     return _round(obj, radius, where, segments)
 
 
-def boolean_apply(obj, cutter, operation='DIFFERENCE', delete_cutter=True, solver='EXACT'):
-    """Boolean `operation` ('DIFFERENCE' | 'UNION' | 'INTERSECT') of obj with cutter, applied."""
+def boolean_apply(obj, cutter, operation='DIFFERENCE', delete_cutter=True, solver='EXACT', use_self=False):
+    """Boolean `operation` ('DIFFERENCE' | 'UNION' | 'INTERSECT') of obj with cutter, applied.
+    use_self=True lets the exact solver handle an operand that overlaps itself (several joined parts)."""
     mod = obj.modifiers.new(name="Boolean", type='BOOLEAN')
     mod.operation = operation
     mod.object = cutter
     mod.solver = solver
+    if use_self:
+        mod.use_self = True
     apply_modifier(obj, mod)
     if delete_cutter:
         delete_object(cutter)
@@ -472,6 +488,43 @@ def boolean_union_apply(obj, other, delete_other=True):
 def boolean_intersect_apply(obj, other, delete_other=True):
     """Keep only the volume shared by obj and other."""
     boolean_apply(obj, other, 'INTERSECT', delete_other)
+
+
+def cut_objects(objs, cutter, delete_cutter=True, margin=0.01):
+    """Subtract one cutter from EVERY object in objs whose bounding box it touches (for a model
+    kept as separate part meshes, where a cut can cross several parts). Returns the objects cut."""
+    cmn, cmx = group_bbox([cutter])
+    hit = []
+    for o in objs:
+        mn, mx = group_bbox([o])
+        if all(cmn[k] <= mx[k] + margin and mn[k] <= cmx[k] + margin for k in range(3)):
+            boolean_apply(o, cutter, 'DIFFERENCE', delete_cutter=False)
+            hit.append(o)
+    if delete_cutter:
+        delete_object(cutter)
+    return hit
+
+
+def fuse_copies(objs, name, coll=None):
+    """One solid made from COPIES of objs (Boolean union, applied); the originals are untouched.
+    Turns a model kept as separate part meshes into one printable mesh. Done as ONE union: the
+    first part with all the others joined into a single (self-overlapping) operand, exact solver
+    with self-intersection. Unioning part by part re-processed already-cut details and left open
+    edges (socket-cut hinge knuckles on a shell). Prints a warning if the result is not watertight."""
+    objs = [o for o in objs if o.type == 'MESH']
+    if not objs:
+        raise ValueError("nothing to fuse")
+    base = duplicate_object(objs[0], "_fuse_base", coll=coll)
+    if len(objs) > 1:
+        rest = join_objects([duplicate_object(o, "_fuse_part", coll=coll) for o in objs[1:]], "_fuse_rest")
+        boolean_apply(base, rest, 'UNION', use_self=True)
+    base.name = unique_name(name)
+    base.data.name = base.name
+    r = check_manifold(base)
+    if not r["watertight"]:
+        print(f"[WARN] fuse_copies({name}): result not watertight ({r['boundary_edges']} open, "
+              f"{r['nonmanifold_edges']} non-manifold edges)")
+    return base
 
 
 def apply_array(obj, count, offset=(10.0, 0.0, 0.0)):
@@ -691,6 +744,7 @@ def translate_objects(objs, offset):
 def rotate_objects(objs, axis, degrees, pivot=None):
     """Rotate a group rigidly about a world axis ('X'|'Y'|'Z') through `pivot`
     (default: the group's bounding-box centre)."""
+    bpy.context.view_layer.update()        # matrix_world of just-created/moved objects is stale until then
     pivot = Vector(pivot) if pivot is not None else group_bbox_center(objs)
     rot = Matrix.Rotation(math.radians(degrees), 4, axis.upper())
     xf = Matrix.Translation(pivot) @ rot @ Matrix.Translation(-pivot)
@@ -707,6 +761,7 @@ def flip_objects(objs, axis='X', pivot=None):
 
 def group_bbox(objs):
     """World-space (min Vector, max Vector) of a group of objects."""
+    bpy.context.view_layer.update()        # matrix_world of just-created/moved objects is stale until then
     mn = Vector((math.inf,) * 3)
     mx = Vector((-math.inf,) * 3)
     for o in objs:

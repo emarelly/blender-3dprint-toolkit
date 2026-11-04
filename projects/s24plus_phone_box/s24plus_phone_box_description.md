@@ -113,3 +113,9 @@ Source: **stated** (user said it), **chosen** (user picked from options), **dele
    - latch test, closed door lifted 0.2 / 0.6 / 1.0 mm: 0 / 3.2 / 4.1 mm³ (all six hooks bite once the 0.4 mm groove clearance is used up);
    - drop-in path (door lifted straight up 0…5 mm): 0 mm³ closed, about 0.02 mm³ of snap interference at 1–2 mm, 0 mm³ from 3 mm up.
 5. Both parts fit the 250 × 210 mm bed; down-facing area needing support is small (box ≈ 1600 mm², door ≈ 1000 mm²).
+
+## Variant: separate-parts build (`s24plus_phone_box_parts_build.py`)
+Same geometry, but for editing by hand in Blender: every added feature is its own mesh. `LAYOUT = "print"` (default) turns the door parts over as a group and places them beside the box, exactly where the main build puts the door; `"closed"` leaves the door on the box. Collection `S24P_Phone_Box_Parts` with children `S24P_Parts_Box` (shell, 4 ribs, 2 phone stops, 2 end stops, 3 hinge knuckles = 12 objects) and `S24P_Parts_Door` (plate, lip, 2 hinge knuckles, 4 stubs, 6 hooks = 14 objects). Cuts are applied to every part they pass through (`utils_3d.cut_objects`); parts overlap where they join. All dimensions and the hinge helpers are loaded from `s24plus_phone_box_build.py` at run time (nothing duplicated).
+- `MODE = "build"` (re)creates the parts and replaces the two collections (hand edits are lost).
+- `MODE = "export"` (or `run_blender.py s24plus_phone_box_parts_build.py -- export`) leaves the parts alone, fuses copies of the current parts into `S24P_Box_Print` / `S24P_Door_Print` (`utils_3d.fuse_copies`: one exact union with self-intersection), lays the door out for printing if the parts were built closed, reports and writes one STL each into `exports_parts/`.
+- Verified: fused unedited parts = the main build (box 65304.43 mm³ identical, door 43760.32 vs 43760.29 mm³), both watertight, exported STLs pair every edge. Assembly checks are not repeated here; use the main script.
