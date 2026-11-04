@@ -21,12 +21,10 @@ Run in Blender (Scripting > Open > Run Script; Text > Reload if you edited the f
     python <library root>/run_blender.py s24plus_hinge_test_build.py
 """
 
-import math
 import os
 import sys
 
 import bpy
-import bmesh
 
 # ---------------------------------------------------------------- KEEP: find utils_3d.py
 # Where is utils_3d.py? It does NOT have to sit next to this script. Searched in order:
@@ -75,20 +73,10 @@ importlib.reload(u)
 MAIN_SCRIPT = "s24plus_phone_box_build.py"
 
 
-def _coupon_dir():
-    """Folder of this script (Blender's text editor only gives a bare __file__, so ask its texts)."""
-    for t in bpy.data.texts:
-        if t.filepath and os.path.basename(t.filepath) == "s24plus_hinge_test_build.py":
-            return os.path.dirname(bpy.path.abspath(t.filepath))
-    try:
-        return os.path.dirname(os.path.abspath(__file__))
-    except NameError:
-        return os.getcwd()
-
-
-_main_path = os.path.join(_coupon_dir(), MAIN_SCRIPT)
+_coupon_dir = u.script_dir("s24plus_hinge_test_build.py")
+_main_path = os.path.join(_coupon_dir, MAIN_SCRIPT)
 if not os.path.isfile(_main_path):
-    raise FileNotFoundError(f"{MAIN_SCRIPT} must be in the same folder as this coupon script ({_coupon_dir()})")
+    raise FileNotFoundError(f"{MAIN_SCRIPT} must be in the same folder as this coupon script ({_coupon_dir})")
 _src = open(_main_path, encoding="utf-8").read()
 _a = _src.index("# ================================================================ SETTINGS")
 _b = _src.index("# ================================================================ KEEP: scene setup")
@@ -149,10 +137,8 @@ def make_box_strip(channel_w):
         u.boolean_union_apply(wall, block)
     cut_socket(wall, KN[0][1], -1)                          # faces toward the door knuckle
     cut_socket(wall, KN[2][0], +1)
-    label = u.make_text("_label", f"{channel_w:.1f}", size=LABEL_SIZE, depth=LABEL_DEPTH + 0.3,
-                        x=(FOOT_X0 + CAV_HW) / 2, y=(STRIP_Y0 + STRIP_Y1) / 2, z=z0 + FOOT_T - LABEL_DEPTH)
-    label.rotation_euler.z = math.radians(90.0)
-    u.boolean_diff_apply(wall, label)
+    u.engrave_text(wall, f"{channel_w:.1f}", (FOOT_X0 + CAV_HW) / 2, (STRIP_Y0 + STRIP_Y1) / 2, z0 + FOOT_T,
+                   size=LABEL_SIZE, depth=LABEL_DEPTH, rot_deg=90.0)
     return wall
 
 
@@ -182,20 +168,9 @@ check_results = {}
 if ASSEMBLY_CHECK:
     for cw, bx in zip(CHANNEL_W_VARIANTS, box_strips):
         r = {"closed_overlap_mm3": round(u.overlap_volume(bx, door_a), 3)}
-        sw = {}
-        for ang in SWING_ANGLES:
-            probe = u.duplicate_object(door_a, "_swing_probe")
-            u.rotate_objects([probe], 'Y', ang, pivot=(HINGE_X, 0.0, HINGE_Z))
-            sw[ang] = round(u.overlap_volume(bx, probe), 3)
-            u.delete_object(probe)
-        r["swing_overlap_mm3"] = sw
-        di = {}
-        for h in DROPIN_HEIGHTS:
-            probe = u.duplicate_object(door_a, "_dropin_probe")
-            u.translate_objects([probe], (0.0, 0.0, h))
-            di[h] = round(u.overlap_volume(bx, probe), 3)
-            u.delete_object(probe)
-        r["dropin_overlap_mm3"] = di
+        r["swing_overlap_mm3"] = u.overlap_at_rotations(bx, door_a, 'Y', SWING_ANGLES, pivot=(HINGE_X, 0.0, HINGE_Z))
+        di = u.overlap_at_offsets(bx, door_a, [(0.0, 0.0, h) for h in DROPIN_HEIGHTS])
+        r["dropin_overlap_mm3"] = {off[2]: v for off, v in di.items()}
         check_results[f"channel_{cw:.1f}"] = r
     print("COUPON CHECK:", check_results)
 
@@ -214,25 +189,9 @@ for k, d in enumerate(doors):                                      # door strips
 
 # ================================================================ KEEP: visibility + report
 coll = bpy.data.collections[COLL_NAME]
-
-
-def _walk(layer_coll):
-    for lc in layer_coll.children:
-        yield lc
-        yield from _walk(lc)
-
-
 if HIDE_OTHER_COLLECTIONS:
-    for lc in _walk(bpy.context.view_layer.layer_collection):
-        lc.hide_viewport = lc.collection.name != COLL_NAME
-
-for win in bpy.context.window_manager.windows:          # frame the model (no-op headless)
-    for area in win.screen.areas:
-        if area.type == 'VIEW_3D':
-            region = next((r for r in area.regions if r.type == 'WINDOW'), None)
-            if region:
-                with bpy.context.temp_override(window=win, area=area, region=region):
-                    bpy.ops.view3d.view_all()
+    u.show_only_collection(COLL_NAME)
+u.frame_all()                                           # no-op headless
 
 print({"status": "ok", "collection": COLL_NAME, "object_count": len(coll.objects),
        "objects": sorted(o.name for o in coll.objects)})
@@ -242,5 +201,5 @@ print("NOTE: min_wall readings of ~0.4-0.5 mm are expected here: the thin walls 
       "socket lip (~1.0) and the stub halves (~0.9).")
 
 if EXPORT:
-    out = EXPORT_DIR or os.path.join(_coupon_dir(), "exports_hinge_test")
+    out = EXPORT_DIR or os.path.join(_coupon_dir, "exports_hinge_test")
     print("exported:", u.export_stl_per_object(out, box_strips + doors))

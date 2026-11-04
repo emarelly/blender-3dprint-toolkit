@@ -192,24 +192,9 @@ tag = "_" + SCREW.replace(".", "") + "R"            # e.g. RC_Case_Lower_M4R
 for o in coll.objects:
     o.name = o.name + tag
 
-
-def _walk(layer_coll):
-    for lc in layer_coll.children:
-        yield lc
-        yield from _walk(lc)
-
-
 if HIDE_OTHER_COLLECTIONS:
-    for lc in _walk(bpy.context.view_layer.layer_collection):
-        lc.hide_viewport = lc.collection.name != COLL_NAME
-
-for win in bpy.context.window_manager.windows:
-    for area in win.screen.areas:
-        if area.type == 'VIEW_3D':
-            region = next((r for r in area.regions if r.type == 'WINDOW'), None)
-            if region:
-                with bpy.context.temp_override(window=win, area=area, region=region):
-                    bpy.ops.view3d.view_all()
+    u.show_only_collection(COLL_NAME)
+u.frame_all()                                           # no-op headless
 
 print({"status": "ok", "screw": SCREW, "collection": COLL_NAME, "object_count": len(coll.objects),
        "corner_r": CORNER_R, "edge_r": EDGE_R, "seam_r": SEAM_R})

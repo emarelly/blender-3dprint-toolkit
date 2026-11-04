@@ -14,12 +14,10 @@ Run in Blender (Scripting > Open > Run Script; Text > Reload if you edited the f
 utils_3d.py is found by searching parent folders (or UTILS_DIR / UTILS_3D_DIR below).
 """
 
-import math
 import os
 import sys
 
 import bpy
-import bmesh
 
 # ---------------------------------------------------------------- KEEP: find utils_3d.py
 # Where is utils_3d.py? It does NOT have to sit next to this script. Searched in order:
@@ -99,11 +97,11 @@ EDGE_SEG = 4
 CAV_HW = (PHONE_W + 2 * CLEAR_XY) / 2                 # cavity half width  (X)  43.2
 CAV_HL = (PHONE_L + 2 * CLEAR_XY + PLUG_POCKET) / 2   # cavity half length (Y)  97.5
 CAV_DEPTH = PHONE_T + 2 * CLEAR_Z                     # 15.4
-OUT_HW = CAV_HW + WALL                                # 42.85
-OUT_HL = CAV_HL + WALL                                # 96.65
-BOX_H = FLOOR + CAV_DEPTH                             # 14.1 (rim / seam plane)
-DOOR_Z1 = BOX_H + DOOR_T                              # 16.5
-POCKET_END_Y = -CAV_HL + PLUG_POCKET                  # -69.25 (start of phone region)
+OUT_HW = CAV_HW + WALL                                # 45.6
+OUT_HL = CAV_HL + WALL                                # 99.9
+BOX_H = FLOOR + CAV_DEPTH                             # 17.8 (rim / seam plane)
+DOOR_Z1 = BOX_H + DOOR_T                              # 20.2
+POCKET_END_Y = -CAV_HL + PLUG_POCKET                  # -72.5 (start of phone region)
 PHONE_Y0 = POCKET_END_Y + CLEAR_XY                    # -70.5 (phone nominal start, 2 mm from the stop)
 PHONE_Z0 = FLOOR + CLEAR_Z                            # 3.4
 PHONE_Y1 = PHONE_Y0 + PHONE_L                         # 95.5 (phone nominal end toward +Y)
@@ -209,46 +207,8 @@ PHONE_CORNER_R_CHECK = 5.0       # corner radius of the dummy phone used only by
 OVERHANG_DEG = 45
 
 
-# ================================================================ local helpers
-def _project_dir():
-    """Folder of this script (Blender's text editor only gives a bare __file__, so ask its texts)."""
-    for t in bpy.data.texts:
-        if t.filepath and os.path.basename(t.filepath) == "s24plus_phone_box_build.py":
-            return os.path.dirname(bpy.path.abspath(t.filepath))
-    try:
-        return os.path.dirname(os.path.abspath(__file__))
-    except NameError:
-        return os.getcwd()
-
-
-def make_prism_yz(name, pts_yz, x_min, x_max):
-    """Extrude a 2D polygon given as (y, z) points along X (utils_3d only has make_prism_xz)."""
-    bm = bmesh.new()
-    a = [bm.verts.new((x_min, py, pz)) for py, pz in pts_yz]
-    b = [bm.verts.new((x_max, py, pz)) for py, pz in pts_yz]
-    n = len(pts_yz)
-    for i in range(n):
-        j = (i + 1) % n
-        bm.faces.new((a[i], a[j], b[j], b[i]))
-    bm.faces.new(a)
-    bm.faces.new(list(reversed(b)))
-    return u._new_object(name, bm, (0, 0, 0), None)
-
-
-def stadium_pts(cx, cz, width, height, seg):
-    """Rounded slot profile (x, z) of overall width x height, ends are semicircles."""
-    r = height / 2
-    half = width / 2 - r
-    pts = []
-    for k in range(seg + 1):                                   # right end, bottom -> top
-        a = -math.pi / 2 + math.pi * k / seg
-        pts.append((cx + half + r * math.cos(a), cz + r * math.sin(a)))
-    for k in range(seg + 1):                                   # left end, top -> bottom
-        a = math.pi / 2 + math.pi * k / seg
-        pts.append((cx - half + r * math.cos(a), cz + r * math.sin(a)))
-    return pts
-
-
+# ================================================================ local helpers (snap-in stub-pin hinge;
+# s24plus_hinge_test_build.py loads this section, keep it between the SETTINGS and scene-setup markers)
 def knuckle_ranges():
     span = HINGE_N * KNUCKLE_L + (HINGE_N - 1) * KNUCKLE_GAP
     y = -span / 2
@@ -273,7 +233,7 @@ def cut_stub_slit(door_obj, face_y, sign):
     ya = face_y + sign * (STUB_L + 0.1)
     yb = face_y - sign * STUB_SLIT_INTO_KNUCKLE
     slit = u.make_box("_stub_slit", HINGE_X - STUB_SLIT_W / 2, HINGE_X + STUB_SLIT_W / 2,
-                      min(ya, yb), max(ya, yb), HINGE_Z - STUB_R_ROOT - 0.1, HINGE_Z + STUB_R_ROOT + 0.1)
+                      ya, yb, HINGE_Z - STUB_R_ROOT - 0.1, HINGE_Z + STUB_R_ROOT + 0.1)
     u.boolean_diff_apply(door_obj, slit)
 
 
@@ -300,29 +260,23 @@ u.setup_units_mm()
 u.use_collection(COLL_NAME, clear=True)
 
 # ================================================================ BOX (closed pose)
-box = u.make_box(BOX_NAME, -OUT_HW, OUT_HW, -OUT_HL, OUT_HL, 0.0, BOX_H)
-u.round_edges(box, CORNER_R, 'VERTICAL', CORNER_SEG)
-u.round_edges(box, BOX_BOTTOM_EDGE_R, 'BOTTOM', EDGE_SEG)
-u.round_edges(box, BOX_SEAM_R, 'TOP', EDGE_SEG)
-
-cavity = u.make_box("_cavity", -CAV_HW, CAV_HW, -CAV_HL, CAV_HL, FLOOR, BOX_H + 5.0)
-u.round_edges(cavity, INNER_CORNER_R, 'VERTICAL', CORNER_SEG)
-u.round_edges(cavity, INNER_FLOOR_R, 'BOTTOM', EDGE_SEG)
-u.boolean_diff_apply(box, cavity)
+box = u.make_hollow_box(BOX_NAME, -OUT_HW, OUT_HW, -OUT_HL, OUT_HL, 0.0, BOX_H, wall=WALL,
+                        open_face='+Z', floor=FLOOR, overshoot=5.0,
+                        bevel=[(CORNER_R, 'VERTICAL', CORNER_SEG), (BOX_BOTTOM_EDGE_R, 'BOTTOM', EDGE_SEG),
+                               (BOX_SEAM_R, 'TOP', EDGE_SEG)],
+                        inner_radius=[(INNER_CORNER_R, 'VERTICAL', CORNER_SEG),
+                                      (INNER_FLOOR_R, 'BOTTOM', EDGE_SEG)])
 
 # phone centring ribs (both long walls)
 for sx in (1, -1):
     for ry in RIB_YS:
-        x_in = sx * (CAV_HW - RIB_PROUD)
-        x_wall = sx * (CAV_HW + 0.1)
-        rib = u.make_box("_rib", min(x_in, x_wall), max(x_in, x_wall),
+        rib = u.make_box("_rib", sx * (CAV_HW - RIB_PROUD), sx * (CAV_HW + 0.1),
                          ry - RIB_L / 2, ry + RIB_L / 2, FLOOR - 0.1, FLOOR + RIB_H)
         u.boolean_union_apply(box, rib)
 
 # phone stop at the plug-pocket boundary, centre gap for the plug
 for sx in (1, -1):
-    x_a, x_b = sx * (STOP_GAP / 2), sx * (CAV_HW + 0.1)
-    stop = u.make_box("_stop", min(x_a, x_b), max(x_a, x_b), POCKET_END_Y - STOP_T, POCKET_END_Y,
+    stop = u.make_box("_stop", sx * (STOP_GAP / 2), sx * (CAV_HW + 0.1), POCKET_END_Y - STOP_T, POCKET_END_Y,
                       FLOOR - 0.1, FLOOR + STOP_H)
     u.boolean_union_apply(box, stop)
 
@@ -348,8 +302,9 @@ for i, (y0, y1) in enumerate(knuckle_ranges()):
             cut_socket(box, y1, -1)       # face at y1 looks toward +Y neighbour; hole goes -Y into the knuckle
 
 # cable slot through the -Y end wall
-slot = u.make_prism_xz("_slot", stadium_pts(0.0, SLOT_Z, SLOT_W, SLOT_H, SLOT_ARC_SEG),
-                       -OUT_HL - 2.0, -CAV_HL + 0.5)
+slot_half = (SLOT_W - SLOT_H) / 2                     # arc centres sit this far either side of X = 0
+slot = u.make_prism("_slot", u.stadium_profile((-slot_half, SLOT_Z), (slot_half, SLOT_Z), SLOT_H, SLOT_ARC_SEG),
+                    'Y', -OUT_HL - 2.0, -CAV_HL + 0.5)
 u.boolean_diff_apply(box, slot)
 
 # snap grooves in the -Y end wall (inner face) for the door hooks
@@ -389,10 +344,7 @@ for hy in HOOK2_YS_SIDE:
                                          z_n0 + (GROOVE2_LIFT if x_has_niche else 0.0), z_g1))
 
 # finger notch in the -X wall rim (box only)
-notch_r = (NOTCH_W ** 2 / 4 + NOTCH_D ** 2) / (2 * NOTCH_D)
-notch = u.make_cylinder_between("_notch", notch_r, (-OUT_HW - 1.0, 0.0, BOX_H - NOTCH_D + notch_r),
-                                (-CAV_HW + 0.4, 0.0, BOX_H - NOTCH_D + notch_r), verts=48)
-u.boolean_diff_apply(box, notch)
+u.cut_finger_notch(box, (-OUT_HW - 1.0, 0.0), (-CAV_HW + 0.4, 0.0), NOTCH_W, NOTCH_D, BOX_H, verts=48)
 
 # ================================================================ DOOR (closed pose)
 door = u.make_box(DOOR_NAME, -OUT_HW, OUT_HW, -OUT_HL, OUT_HL, BOX_H, DOOR_Z1)
@@ -403,12 +355,8 @@ u.round_edges(door, DOOR_SEAM_R, 'BOTTOM', EDGE_SEG)
 # locating lip: rounded rectangular frame under the plate, 0.3 mm inside the cavity wall
 lip_hw, lip_hl = CAV_HW - LIP_GAP, CAV_HL - LIP_GAP
 lip_r = INNER_CORNER_R - LIP_GAP
-lip = u.make_box("_lip", -lip_hw, lip_hw, -lip_hl, lip_hl, BOX_H - LIP_H, BOX_H + FUSE)
-u.round_edges(lip, lip_r, 'VERTICAL', CORNER_SEG)
-lip_hole = u.make_box("_lip_hole", -(lip_hw - LIP_T), lip_hw - LIP_T, -(lip_hl - LIP_T), lip_hl - LIP_T,
-                      BOX_H - LIP_H - 1.0, BOX_H + FUSE + 1.0)
-u.round_edges(lip_hole, lip_r - LIP_T, 'VERTICAL', CORNER_SEG)
-u.boolean_diff_apply(lip, lip_hole)
+lip = u.make_lid_lip("_lip", -lip_hw, lip_hw, -lip_hl, lip_hl, BOX_H - LIP_H, BOX_H + FUSE, lip_t=LIP_T,
+                     corner_r=lip_r, segments=CORNER_SEG)
 u.boolean_union_apply(door, lip)
 
 # hinge knuckles on the door (odd indices): barrel + arm out from the plate edge
@@ -429,79 +377,61 @@ u.cut_hex_vents(door, VENT_COLS, VENT_ROWS, VENT_AF, BOX_H - 0.5, DOOR_Z1 + 1.0,
                 web=VENT_WEB, center=VENT_CENTER)
 
 # engraved label on the outer face
-label = u.make_text("_label", LABEL_TEXT, size=LABEL_SIZE, depth=LABEL_DEPTH + 0.3, x=0.0, y=0.0,
-                    z=DOOR_Z1 - LABEL_DEPTH)
-label.rotation_euler.z = math.radians(LABEL_ROT_DEG)
-u.boolean_diff_apply(door, label)
+u.engrave_text(door, LABEL_TEXT, 0.0, 0.0, DOOR_Z1, size=LABEL_SIZE, depth=LABEL_DEPTH, rot_deg=LABEL_ROT_DEG)
+
+
+def lift_overlaps(fixed, moving, heights):
+    """{height: mm3} for `moving` lifted straight up by each height."""
+    res = u.overlap_at_offsets(fixed, moving, [(0.0, 0.0, h) for h in heights])
+    return {off[2]: v for off, v in res.items()}
+
 
 # ================================================================ hinge swing check (door without hooks)
 # The snap hooks are meant to catch in their grooves, so the swing test runs before they exist.
 check_results = {}
 if ASSEMBLY_CHECK:
-    swing = {}
-    for ang in (15, 45, 90, 135, 180):
-        probe = u.duplicate_object(door, "_swing_probe")
-        u.rotate_objects([probe], 'Y', ang, pivot=(HINGE_X, 0.0, HINGE_Z))
-        swing[ang] = round(u.overlap_volume(box, probe), 3)
-        u.delete_object(probe)
-    check_results["swing_overlap_mm3"] = swing
+    check_results["swing_overlap_mm3"] = u.overlap_at_rotations(box, door, 'Y', (15, 45, 90, 135, 180),
+                                                                pivot=(HINGE_X, 0.0, HINGE_Z))
     # drop-in test: lift the closed door straight up; the stubs pass through the socket channels,
     # so a small overlap = the snap interference (0 at the closed position = free stub in socket)
-    dropin = {}
-    for h in (0.0,) + tuple(DROPIN_HEIGHTS):
-        probe = u.duplicate_object(door, "_dropin_probe")
-        u.translate_objects([probe], (0.0, 0.0, h))
-        dropin[h] = round(u.overlap_volume(box, probe), 3)
-        u.delete_object(probe)
-    check_results["dropin_overlap_mm3"] = dropin
+    check_results["dropin_overlap_mm3"] = lift_overlaps(box, door, (0.0,) + tuple(DROPIN_HEIGHTS))
 
-# snap hooks at the -Y end: arm continues the lip downward, tip points toward -Y
-y_in, y_out = -(lip_hl - LIP_T), -lip_hl
-y_tip = y_out - HOOK_TIP
+# snap hooks hang from the door (root FUSE above the seam, fused into the plate / lip) with a flat catch
+# on top of the tip and a ramp from the arm's free end up to the tip (pointed=True)
 z_top = BOX_H + FUSE
-z_low = BOX_H - HOOK_LEN
+hook_l = HOOK_LEN + FUSE                               # root down to the hook's lowest point (BOX_H - HOOK_LEN)
+# -Y end: the arm continues the lip downward, tip points toward -Y
 for hx in HOOK_XS:
-    prof = [(y_in, z_top), (y_in, z_low), (y_tip, z_low + HOOK_HEIGHT), (y_out, z_low + HOOK_HEIGHT), (y_out, z_top)]
-    hook = make_prism_yz("_hook", prof, hx - HOOK_W / 2, hx + HOOK_W / 2)
-    u.boolean_union_apply(door, hook)
-
-# extra hooks (smaller, in wall niches): +Y end (profile in YZ, tip toward +Y)
+    u.boolean_union_apply(door, u.make_snap_hook("_hook", hx, -(lip_hl - LIP_T), z_top, width=HOOK_W,
+                                                 length=hook_l, thickness=LIP_T, hook_depth=HOOK_TIP,
+                                                 hook_height=HOOK_HEIGHT, direction='-Y', hanging=True,
+                                                 pointed=True))
+# extra hooks (smaller, in wall niches): +Y end (tip toward +Y) and -X long side (tip toward -X)
+hook2 = dict(width=HOOK_W, length=hook_l, thickness=HOOK2_ARM_T, hook_depth=HOOK2_TIP, hook_height=HOOK_HEIGHT,
+             hanging=True, pointed=True)
 for hx in HOOK2_XS_END:
-    prof = [(y_arm_in, z_top), (y_arm_in, z_low), (y_arm_tip, z_low + HOOK_HEIGHT), (y_arm_out, z_low + HOOK_HEIGHT), (y_arm_out, z_top)]
-    u.boolean_union_apply(door, make_prism_yz("_hook2", prof, hx - HOOK_W / 2, hx + HOOK_W / 2))
-# -X long side (profile in XZ, tip toward -X)
+    u.boolean_union_apply(door, u.make_snap_hook("_hook2", hx, y_arm_in, z_top, direction='+Y', **hook2))
 for hy in HOOK2_YS_SIDE:
-    prof = [(x_arm_in, z_top), (x_arm_in, z_low), (x_arm_tip, z_low + HOOK_HEIGHT), (x_arm_out, z_low + HOOK_HEIGHT), (x_arm_out, z_top)]
-    u.boolean_union_apply(door, u.make_prism_xz("_hook2", prof, hy - HOOK_W / 2, hy + HOOK_W / 2))
+    u.boolean_union_apply(door, u.make_snap_hook("_hook2", x_arm_in, hy, z_top, direction='-X', **hook2))
 
 # ================================================================ assembly checks (closed pose, with hooks)
 if ASSEMBLY_CHECK:
     check_results["closed_overlap_mm3"] = round(u.overlap_volume(box, door), 3)
     # latch test: lift the closed door; every hook bites into its groove ceiling once the lift exceeds the
     # 0.4 mm groove clearance, so the overlap grows with the lift (retention); a few hundredths = hinge stubs only
-    lift = {}
-    for h in (0.2, 0.6, 1.0):
-        probe = u.duplicate_object(door, "_lift_probe")
-        u.translate_objects([probe], (0.0, 0.0, h))
-        lift[h] = round(u.overlap_volume(box, probe), 3)
-        u.delete_object(probe)
-    check_results["latch_lift_overlap_mm3"] = lift
+    check_results["latch_lift_overlap_mm3"] = lift_overlaps(box, door, (0.2, 0.6, 1.0))
     # dummy phone at its nominal place and pushed to every extreme it can reach (ribs / end stops allow
     # RIB_PLAY sideways and toward +Y; toward -Y it can slide CLEAR_XY until the phone stop). Shifts stop
     # 0.01 short of the contact so touching faces do not count as overlap.
-    phone_box, phone_door = {}, {}
     e = 0.01
-    for dx, dy in ((0, 0), (RIB_PLAY - e, RIB_PLAY - e), (-(RIB_PLAY - e), RIB_PLAY - e),
-                   (RIB_PLAY - e, -(CLEAR_XY - e)), (-(RIB_PLAY - e), -(CLEAR_XY - e))):
-        phone = u.make_box("_phone", -PHONE_W / 2 + dx, PHONE_W / 2 + dx, PHONE_Y0 + dy, PHONE_Y0 + PHONE_L + dy,
-                           PHONE_Z0, PHONE_Z0 + PHONE_T)
-        u.round_edges(phone, PHONE_CORNER_R_CHECK, 'VERTICAL', CORNER_SEG)
-        key = f"{dx:+.2f},{dy:+.2f}"
-        phone_box[key] = round(u.overlap_volume(phone, box), 3)
-        phone_door[key] = round(u.overlap_volume(phone, door), 3)
-        u.delete_object(phone)
-    check_results["phone_vs_box_mm3"] = phone_box
-    check_results["phone_vs_door_mm3"] = phone_door
+    shifts = [(0, 0, 0), (RIB_PLAY - e, RIB_PLAY - e, 0), (-(RIB_PLAY - e), RIB_PLAY - e, 0),
+              (RIB_PLAY - e, -(CLEAR_XY - e), 0), (-(RIB_PLAY - e), -(CLEAR_XY - e), 0)]
+    phone = u.make_rounded_box("_phone", -PHONE_W / 2, PHONE_W / 2, PHONE_Y0, PHONE_Y0 + PHONE_L,
+                               PHONE_Z0, PHONE_Z0 + PHONE_T, PHONE_CORNER_R_CHECK, 'VERTICAL', CORNER_SEG)
+    for key, part in (("phone_vs_box_mm3", box), ("phone_vs_door_mm3", door)):
+        res = u.overlap_at_offsets(part, phone, shifts)
+        check_results[key] = {f"{dx:+.2f},{dy:+.2f}": v for (dx, dy, _), v in res.items()}
+    u.delete_object(phone)
     print("ASSEMBLY CHECK:", check_results)
 
 # ================================================================ print layout: door flipped, beside box
@@ -511,25 +441,9 @@ u.drop_to_bed([door])
 
 # ================================================================ KEEP: visibility + report
 coll = bpy.data.collections[COLL_NAME]
-
-
-def _walk(layer_coll):
-    for lc in layer_coll.children:
-        yield lc
-        yield from _walk(lc)
-
-
 if HIDE_OTHER_COLLECTIONS:
-    for lc in _walk(bpy.context.view_layer.layer_collection):
-        lc.hide_viewport = lc.collection.name != COLL_NAME
-
-for win in bpy.context.window_manager.windows:          # frame the model (no-op headless)
-    for area in win.screen.areas:
-        if area.type == 'VIEW_3D':
-            region = next((r for r in area.regions if r.type == 'WINDOW'), None)
-            if region:
-                with bpy.context.temp_override(window=win, area=area, region=region):
-                    bpy.ops.view3d.view_all()
+    u.show_only_collection(COLL_NAME)
+u.frame_all()                                           # no-op headless
 
 print({"status": "ok", "collection": COLL_NAME, "object_count": len(coll.objects),
        "objects": sorted(o.name for o in coll.objects)})
@@ -538,5 +452,5 @@ print("NOTE: S24P_Door min_wall (~0.19 mm) is the tapering tip of the snap hooks
       "designed sections are: hook arm and lip 1.2, vent webs 1.2, hinge socket lip ~1.0, walls 2.4.")
 
 if EXPORT:
-    out = EXPORT_DIR or os.path.join(_project_dir(), "exports")
+    out = EXPORT_DIR or os.path.join(u.script_dir("s24plus_phone_box_build.py"), "exports")
     print("exported:", u.export_stl_per_object(out, [box, door]))
