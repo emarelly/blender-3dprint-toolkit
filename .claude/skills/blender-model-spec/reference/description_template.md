@@ -16,6 +16,8 @@ Every value below is final. Source: **stated** (user said it), **chosen** (user 
 
 | Parameter | Value | Source |
 |---|---|---|
+| Mesh structure | one mesh per printed part / every feature its own mesh (which ones) | chosen |
+| Scene layout at start | ready for print / assembled (`LAYOUT = "print"` / `"assembled"`; the other is one setting away) | chosen |
 | Wall thickness | 2.5 mm | chosen |
 | ... | ... | ... |
 
@@ -31,8 +33,11 @@ Every value below is final. Source: **stated** (user said it), **chosen** (user 
 ## Secondary parts
 Table: | Object name | Type | Position (X, Y) | Z range | Outer size | Bore (size, blind/through) |
 
-## Placement
-<Offsets/rotations applied to each group, in order. "None" if parts stay where built.>
+## Placement (two layouts, setting `LAYOUT`)
+- **Assembled** (`LAYOUT = "assembled"`): the pose every part is modelled in — <how the parts sit together>.
+- **Ready for print** (`LAYOUT = "print"`): <rotation/flip and offset applied to each part group, in order, so every part lies on Z = 0 in its print orientation, side by side with <gap> mm between parts>.
+- Default when the script runs: <print / assembled> (chosen).
+- <If every feature is its own mesh: the parts of one printed part move as a group; `MODE = "export"` fuses copies of the current parts into one mesh per printed part (`u.fuse_copies`), lays them out for print if needed and writes the STLs.>
 
 ## Print notes
 - Orientation per part, supports (yes/no and where), fit tolerances used (`TOL_*`), known risks.

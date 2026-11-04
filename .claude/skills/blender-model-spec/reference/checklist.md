@@ -9,7 +9,9 @@ For each area: ask, or confirm it is stated. Skip a row only if it genuinely doe
 
 ## 2. Overall form
 - Overall outer size (L × W × H) and which axis is which. Coordinate system: origin location, Z=0 = print bed.
-- One part or several? If several: how they split (lid/base, left/right), which is printed which way up, how they sit relative to each other in the model (side by side offset? assembled?).
+- One part or several? If several: how they split (lid/base, left/right), which is printed which way up.
+- **Mesh structure (always ask):** *one mesh per printed part* (features fused in, ready to print) or *every feature its own mesh* (ribs, bosses, hooks, knuckles… kept separate so they can be edited by hand in Blender; cuts applied to every part they pass through; an export mode fuses copies into one mesh per printed part). Ask which features count as "major" if the user wants only some split out.
+- **Scene layout (always ask, both are built into the script):** which one the script starts with — *ready for print* (parts laid out side by side on the bed, each in its print orientation) or *assembled* (parts in their assembled positions, to check fit). The other stays one setting away (`LAYOUT`).
 - Wall thickness (sides), floor/ceiling thickness, rim/seam design (flat rim, lip, overlap).
 
 ## 3. Rounding and finish
@@ -36,7 +38,7 @@ For each area: ask, or confirm it is stated. Skip a row only if it genuinely doe
 
 ## 9. Naming and output
 - Project folder name and location (default: a new `projects/<name>/` folder under the folder containing `utils_3d.py`); if outside that tree, how the script should find `utils_3d.py` (`UTILS_DIR` setting vs `UTILS_3D_DIR` environment variable).
-- Object names (prefix convention), collection name, whether to hide other collections, flip/placement of parts in the scene.
+- Object names (prefix convention), collection name, whether to hide other collections. (Placement of parts = the scene layout from area 2.)
 - Outputs wanted: .blend, STL (combined / per part), 3MF; output folder.
 - Blender version in use (affects nothing important, but confirm if unsure).
 
