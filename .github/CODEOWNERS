@@ -3,15 +3,15 @@
 # Later lines take precedence over earlier ones for the paths they match.
 
 # Default owner: everything in the repository
-*                                   @emarelly
+*                                   @emarelly @emarellygit
 
 # Shared library and launcher (changes affect every project)
-/utils_3d.py                        @emarelly
-/run_blender.py                     @emarelly
+/utils_3d.py                        @emarelly @emarellygit
+/run_blender.py                     @emarelly @emarellygit
 
 # Claude Code skill and project instructions
-/.claude/                           @emarelly
-/CLAUDE.md                          @emarelly
+/.claude/                           @emarelly @emarellygit
+/CLAUDE.md                          @emarelly @emarellygit
 
 # Projects
-/projects/                          @emarelly
+/projects/                          @emarelly @emarellygit
