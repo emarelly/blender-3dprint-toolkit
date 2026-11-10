@@ -5,7 +5,7 @@ A printed adapter for a custom outdoor light fixture: it hangs a closed glass gl
 
 How it is used: the adapter's spigot screws into the glass's internal thread and carries the glass. The dome sits on the globe over the Ø36 cut top and seals it with an O-ring pressed onto the flat cut top of the glass. The pipe (wires inside) passes the Ø13 bore, screws through the M10×1 thread in the spigot and comes out inside the globe, where a G9 holder with an M10×1 back thread screws onto the pipe end and holds the bulb (not the glass).
 
-Section sketch: `g9_dome_adapter_sketch.html` (this folder).
+Section sketch: `g9_dome_adapter_sketch.html` (this folder): half-section of the part on the glass in the modelled pose (O-ring just touching), drawn from the same values as this spec, with the dimension table, assembly order and print notes. The glass wall in it is schematic.
 
 ## General rules
 - **Units:** millimetres. Scene unit system METRIC, scale 0.001, length unit MILLIMETERS (`setup_units_mm()`).
