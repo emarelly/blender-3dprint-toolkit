@@ -20,16 +20,16 @@ Typical use inside a Blender script:
 Sections
     1. Scene / collection setup (collections, show-only / frame view, script folder)
     2. Primitive builders (box, cylinder, frustum, slot, stadium profile, prism along any axis,
-       revolved profile)
+       revolved profile, revolved ring with a hole)
     3. Modifier wrappers (bevel, boolean, array, solidify, multi-radius edge rounding) -- always
        applied/baked
     4. Print-oriented feature builders (hollow box, boss, holes, countersink, lid lip, finger notch...)
     5. Layout helpers (grid / line / circle / mirror positions)
     6. Transforms (move, rotate, flip, drop to bed, arrange, join, duplicate)
     7. Inspection (bounding box, manifold check, print report)
-    8. Export / save (STL, 3MF, .blend)
+    8. Export / save (STL clean-up, STL, 3MF, .blend)
     9. Tolerances, screw/insert tables, Params
-   10. Screw / insert / nut / magnet features
+   10. Screw / insert / nut / magnet features, printed threads (threaded tubes, thread specs)
    11. Snap fits, vents, text
    12. Print-quality checks (min wall, overhang, bed fit, overlaps incl. pose sweeps,
        orientation, split)
@@ -345,6 +345,29 @@ def make_revolved(name, profile, x=0.0, y=0.0, z=0.0, verts=48, coll=None):
     return _new_object(name, bm, (x, y, z), coll)
 
 
+def make_revolved_ring(name, profile, x=0.0, y=0.0, z=0.0, verts=48, coll=None):
+    """Lathe a closed (radius, z) polygon that does NOT touch the axis into a ring solid (a part
+    with a hole through the middle), around the Z axis at (x, y, z offset). The polygon is closed
+    implicitly (last point joins the first); either direction works.
+    Draw bores, recesses, grooves and steps into the profile instead of cutting them with
+    Booleans: on a lathe, cutter vertices land on the lathe's own edges and exact Booleans leave
+    open / non-manifold edges. Example washer with a groove underneath:
+        [(5, 0), (8, 0), (8, 1), (9, 1), (9, 0), (12, 0), (12, 3), (5, 3)]"""
+    if any(r <= 1e-9 for r, _ in profile):
+        raise ValueError("every profile radius must be > 0 (use make_revolved for solids on the axis)")
+    bm = bmesh.new()
+    rings = [[bm.verts.new((r * math.cos(2 * math.pi * i / verts),
+                            r * math.sin(2 * math.pi * i / verts), pz)) for i in range(verts)]
+             for r, pz in profile]
+    n = len(rings)
+    for k in range(n):
+        a, b = rings[k], rings[(k + 1) % n]
+        for i in range(verts):
+            j = (i + 1) % verts
+            bm.faces.new((a[i], a[j], b[j], b[i]))
+    return _new_object(name, bm, (x, y, z), coll)
+
+
 # =====================================================================
 # 3. MODIFIER WRAPPERS (add -> apply -> object is plain mesh again)
 # =====================================================================
@@ -505,12 +528,14 @@ def cut_objects(objs, cutter, delete_cutter=True, margin=0.01):
     return hit
 
 
-def fuse_copies(objs, name, coll=None):
+def fuse_copies(objs, name, coll=None, clean=True):
     """One solid made from COPIES of objs (Boolean union, applied); the originals are untouched.
     Turns a model kept as separate part meshes into one printable mesh. Done as ONE union: the
     first part with all the others joined into a single (self-overlapping) operand, exact solver
     with self-intersection. Unioning part by part re-processed already-cut details and left open
-    edges (socket-cut hinge knuckles on a shell). Prints a warning if the result is not watertight."""
+    edges (socket-cut hinge knuckles on a shell). clean=True runs clean_for_stl on the result (the
+    union leaves near-duplicate vertices that become doubled edges in the STL). Prints a warning if
+    the result is not watertight."""
     objs = [o for o in objs if o.type == 'MESH']
     if not objs:
         raise ValueError("nothing to fuse")
@@ -520,6 +545,8 @@ def fuse_copies(objs, name, coll=None):
         boolean_apply(base, rest, 'UNION', use_self=True)
     base.name = unique_name(name)
     base.data.name = base.name
+    if clean:
+        clean_for_stl(base)
     r = check_manifold(base)
     if not r["watertight"]:
         print(f"[WARN] fuse_copies({name}): result not watertight ({r['boundary_edges']} open, "
@@ -905,6 +932,24 @@ def safe_filename(name):
     return re.sub(r"[^\w\-.]+", "_", name)
 
 
+def clean_for_stl(obj, dist=1e-4):
+    """Merge vertices closer than `dist` mm, dissolve degenerate (zero-area / zero-length) faces and
+    edges, and triangulate (BEAUTY), in place. Use it on Boolean results before exporting: a union
+    can leave near-duplicate vertices that Blender treats as separate (mesh reads watertight) but
+    that become identical in the STL's 32-bit floats, so the STL gets doubled / unpaired edges
+    (~220 on the G9 dome adapter; 0 after this). Do not run it on meshes you still want to edit as
+    quads. fuse_copies does it by default."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=dist)
+    bmesh.ops.dissolve_degenerate(bm, edges=bm.edges[:], dist=dist)
+    bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method='BEAUTY', ngon_method='BEAUTY')
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    return obj
+
+
 def export_stl(filepath, objs=None, ascii_format=False, apply_modifiers=True):
     """Export the given objects (default: active collection) as ONE STL, in mm.
     Works on Blender 4.2+ (wm.stl_export) and older (export_mesh.stl). Selection is restored."""
@@ -1136,6 +1181,167 @@ def make_nut_trap_cutter(name, x, y, z_bottom, screw='M3', tol=TOL_SLIDE, slide_
 def make_magnet_pocket_cutter(name, x, y, z_bottom, dia, thickness, tol=TOL_PRESS, open_top=True):
     """Round pocket for a disc magnet. Depth = thickness + tol; open_top adds 0.5 mm overshoot."""
     return make_cylinder(name, (dia + tol) / 2, z_bottom, z_bottom + thickness + tol + (0.5 if open_top else 0.0), x, y)
+
+
+# ---------------------------------------------------------------------
+# 10b. Printed threads (built directly from rings, no Boolean)
+# ---------------------------------------------------------------------
+# A thread surface is r(angle, z) = r_min + (r_max - r_min) * amp * form(z / pitch - angle / 2pi)
+# (right hand; left=True mirrors it). form(t) is one pitch of profile, 0 = root, 1 = crest.
+# Threads are vertical in print (axis = Z): best quality, no supports. Values are typical
+# starting points: print a short test piece and adjust the clearance.
+
+def thread_form_round(t):
+    """Rounded (sinusoidal) thread profile: glass / lamp-shade threads, coarse forgiving fits."""
+    return 0.5 - 0.5 * math.cos(2 * math.pi * t)
+
+
+def thread_form_iso(t):
+    """ISO metric 60-degree trapezoid profile (crest P/8, root P/4), 0 = root, 1 = crest."""
+    t %= 1.0
+    if t < 0.125:
+        return 1.0
+    if t < 0.4375:
+        return 1.0 - (t - 0.125) / 0.3125
+    if t < 0.6875:
+        return 0.0
+    return (t - 0.6875) / 0.3125
+
+
+THREAD_FORMS = {'round': thread_form_round, 'iso': thread_form_iso}
+
+METRIC_COARSE_PITCH = {'M3': 0.5, 'M4': 0.7, 'M5': 0.8, 'M6': 1.0, 'M8': 1.25, 'M10': 1.5,
+                       'M12': 1.75, 'M16': 2.0, 'M20': 2.5}
+
+# Non-metric threads: nominal major / minor diameters (not verified hardware data; measure yours).
+THREADS = {
+    'G9_shade': dict(major=20.8, minor=19.2, pitch=2.0, form='round'),   # M20.8 x 2 G9 lamp-shade ring
+}
+
+
+def thread_spec(name, internal=False, clearance=0.2):
+    """Thread section dict for make_threaded_tube: r_min, r_max, pitch, form.
+    name: 'M10' (coarse pitch), 'M10x1' (fine), or a key of THREADS ('G9_shade').
+    internal=True: a printed NUT thread (the hole), radii grow by `clearance` mm per side;
+    internal=False: a printed BOLT thread, radii shrink by `clearance`. ISO minor diameters:
+    internal d - 1.0825 P, external d - 1.2269 P. Example: thread_spec('M10x1', internal=True)
+    -> r 4.659 .. 5.2 (minor 9.317 / major 10.4)."""
+    if name in THREADS:
+        t = THREADS[name]
+        major, minor, pitch, form = t['major'], t['minor'], t['pitch'], t['form']
+    else:
+        m = re.fullmatch(r"M(\d+(?:\.\d+)?)(?:x(\d+(?:\.\d+)?))?", name)
+        if not m:
+            raise ValueError(f"unknown thread {name!r}: use 'M10', 'M10x1' or one of {list(THREADS)}")
+        major = float(m.group(1))
+        if m.group(2):
+            pitch = float(m.group(2))
+        elif f"M{m.group(1)}" in METRIC_COARSE_PITCH:
+            pitch = METRIC_COARSE_PITCH[f"M{m.group(1)}"]
+        else:
+            raise ValueError(f"no coarse pitch known for {name!r}: give it as 'M{m.group(1)}x<pitch>'")
+        minor = major - (1.0825 if internal else 1.2269) * pitch
+        form = 'iso'
+    c = clearance if internal else -clearance
+    return dict(r_min=minor / 2 + c, r_max=major / 2 + c, pitch=pitch, form=form)
+
+
+def thread_radii(z, r_min, r_max, pitch, form='iso', amp=1.0, segments=96, left=False):
+    """One ring of `segments` radii of a thread surface at height z (see the section note).
+    amp (0..1) scales the thread height, e.g. for a lead-in."""
+    f = THREAD_FORMS[form] if isinstance(form, str) else form
+    s = 1.0 if left else -1.0
+    return [r_min + (r_max - r_min) * amp * f(z / pitch + s * i / segments) for i in range(segments)]
+
+
+def thread_z_steps(z0, z1, pitch, steps_per_pitch=16):
+    """Ring heights from z0 to z1 (both included), steps_per_pitch rings per pitch."""
+    k = max(1, int(math.ceil((z1 - z0) / pitch * steps_per_pitch)))
+    return [z0 + (z1 - z0) * i / k for i in range(k + 1)]
+
+
+def make_ring_tube(name, outer, inner, x=0.0, y=0.0, z=0.0, coll=None):
+    """Watertight tube from rings, no Boolean. outer / inner = [(z, [radius per angle]), ...] from
+    bottom to top, every ring the same length (angle 0 on +X). Two consecutive rings at the same z
+    make a flat step. Flat ring faces join the first outer ring to the first inner ring (bottom)
+    and the last to the last (top), so both lists must start and end at the same z. Inner radii
+    must stay below the outer ones. Low-level: make_threaded_tube builds the ring lists for you."""
+    n = len(outer[0][1])
+    if any(len(r) != n for _, r in outer + inner):
+        raise ValueError("every ring must have the same number of radii")
+    bm = bmesh.new()
+
+    def ring(pz, radii):
+        return [bm.verts.new((r * math.cos(2 * math.pi * i / n), r * math.sin(2 * math.pi * i / n), pz))
+                for i, r in enumerate(radii)]
+
+    def band(a, b):
+        for i in range(n):
+            j = (i + 1) % n
+            bm.faces.new((a[i], a[j], b[j], b[i]))
+
+    o = [ring(pz, rr) for pz, rr in outer]
+    m = [ring(pz, rr) for pz, rr in inner]
+    for k in range(len(o) - 1):
+        band(o[k], o[k + 1])
+    for k in range(len(m) - 1):
+        band(m[k], m[k + 1])
+    band(o[0], m[0])
+    band(o[-1], m[-1])
+    return _new_object(name, bm, (x, y, z), coll)
+
+
+def _thread_rings(z0, z1, surface, segments, steps_per_pitch):
+    """Ring list (z, radii) for one surface of make_threaded_tube."""
+    if isinstance(surface, (int, float)):
+        surface = [dict(r=float(surface))]
+    elif isinstance(surface, dict):
+        surface = [surface]
+    rings, start = [], z0
+    for idx, sec in enumerate(surface):
+        end = z1 if idx == len(surface) - 1 else sec['z1']
+        if end <= start:
+            raise ValueError(f"thread section {idx} ends at z={end}, not above its start z={start}")
+        if 'r' in sec:
+            new = [(start, [sec['r']] * segments), (end, [sec['r']] * segments)]
+        else:
+            leadin, leadout = sec.get('leadin', 0.0), sec.get('leadout', 0.0)
+            new = []
+            for pz in thread_z_steps(start, end, sec['pitch'], steps_per_pitch):
+                amp = 1.0
+                if leadin > 0:
+                    amp = min(amp, (pz - start) / leadin)
+                if leadout > 0:
+                    amp = min(amp, (end - pz) / leadout)
+                new.append((pz, thread_radii(pz, sec['r_min'], sec['r_max'], sec['pitch'],
+                                             sec.get('form', 'iso'), amp, segments, sec.get('left', False))))
+        if rings and rings[-1][1] == new[0][1]:     # same ring twice would make zero-area faces
+            new = new[1:]
+        rings += new
+        start = end
+    return rings
+
+
+def make_threaded_tube(name, z0, z1, outer, inner, segments=96, steps_per_pitch=16,
+                       x=0.0, y=0.0, coll=None):
+    """Tube along Z from z0 to z1 with threaded and/or plain outer and inner surfaces, built
+    directly from rings (watertight, no Boolean: exact-Boolean thread cutters left slivers and open
+    edges). Each surface is
+      * a number: plain radius, or
+      * a section dict: plain {'r': 6.2} or thread {'r_min', 'r_max', 'pitch', 'form' ('iso' |
+        'round' | callable), optional 'leadin' / 'leadout' (mm over which the thread fades in at
+        the section's bottom / out at its top), 'left': True}; thread_spec() makes these, or
+      * a list of section dicts from bottom to top; each but the last gives its top 'z1' (the last
+        ends at z1). A change of radius between sections is a flat step.
+    The thread phase is absolute in z, so tubes built with the same values mesh with each other.
+    Example (G9 dome adapter spigot): G9 shade thread outside, M10x1 nut thread inside up to z=0,
+    then a plain dia 12.4 bore:
+        make_threaded_tube("Spigot", -15, 1.05,
+            outer=dict(thread_spec('G9_shade', clearance=0.1), leadin=2.0),
+            inner=[dict(thread_spec('M10x1', internal=True), z1=0.0), dict(r=6.2)])"""
+    out = _thread_rings(z0, z1, outer, segments, steps_per_pitch)
+    inn = _thread_rings(z0, z1, inner, segments, steps_per_pitch)
+    return make_ring_tube(name, out, inn, x, y, 0.0, coll)
 
 
 # =====================================================================
