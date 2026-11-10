@@ -38,7 +38,8 @@ blender-3dprint-toolkit/
 │   └── reference/         # build template, spec template, checklist, verify_model.py, check_stl.py
 └── projects/              # one folder per design
     ├── rc_remote_case/    # two-part RC remote enclosure (several generations of build scripts)
-    └── s24plus_phone_box/ # Samsung S24+ storage/charging box with a snap-in hinge and snap hooks
+    ├── s24plus_phone_box/ # Samsung S24+ storage/charging box with a snap-in hinge and snap hooks
+    └── g9_dome_adapter/   # lamp adapter: M10x1 pipe to a G9 glass globe, with a sealed dome cover
 ```
 
 ### Example projects
@@ -47,6 +48,7 @@ blender-3dprint-toolkit/
 |---|---|
 | [`projects/s24plus_phone_box`](projects/s24plus_phone_box) | Made end to end with the skill. A box and a door with a snap-in stub-pin hinge (no separate pin), six snap hooks, phone ribs, a cable slot, honeycomb vents and an engraved label. The build checks that the door closes, the hinge swings, the latch holds and the phone fits at every extreme position. Also contains a **hinge test coupon** that loads its settings from the main script, and a **separate-parts build** (every feature its own mesh, for editing by hand in Blender, with an export mode that fuses them back into printable parts). |
 | [`projects/rc_remote_case`](projects/rc_remote_case) | A two-part RC remote case, built several ways: the original standalone scripts, a version refactored onto `utils_3d`, M4 screw variants and fully rounded shells. Its [README](projects/rc_remote_case/README.md) documents every file and lists the `utils_3d` functions. |
+| [`projects/g9_dome_adapter`](projects/g9_dome_adapter) | Made with the skill. A one-piece outdoor-lamp adapter: a spigot that screws into a glass globe's G9 thread and carries a printed M10×1 pipe thread inside, plus a Ø60 dome that covers the globe's cut top and seals it with an O-ring. Two printed threads and a lathed dome, built **without a single Boolean cut** (`make_threaded_tube`, `make_revolved_ring`), an export mode that fuses the features into one STL, and a [section sketch](projects/g9_dome_adapter/g9_dome_adapter_sketch.html) drawn from the same values. It went through a real test print: the first print revealed the flat and the O-ring had to shrink, and that change was two numbers in the SETTINGS block. |
 
 ## Requirements
 
@@ -108,13 +110,26 @@ u.print_report()                                     # watertight? modifiers lef
 # u.export_stl_per_object("exports")                 # one STL per object
 ```
 
+Round parts and printed threads are built directly from rings, with no Boolean cuts:
+
+```python
+# washer with a groove underneath: draw the groove into the profile instead of cutting it
+washer = u.make_revolved_ring("Washer", [(5, 0), (8, 0), (8, 1), (9, 1), (9, 0), (12, 0), (12, 3), (5, 3)])
+
+# 15 mm tube: G9 lamp-shade thread outside (fading in at the tip), M10x1 nut thread inside up to z = 0,
+# then a plain dia 12.4 bore
+spigot = u.make_threaded_tube("Spigot", -15, 1.05,
+    outer=dict(u.thread_spec("G9_shade", clearance=0.1), leadin=2.0),
+    inner=[dict(u.thread_spec("M10x1", internal=True), z1=0.0), dict(r=6.2)])
+```
+
 Conventions the library follows:
 - **Millimetres everywhere**; Z = 0 is the print bed.
 - **Primitives are built with `bmesh`**, origin at the geometric centre.
 - **Every Boolean and bevel is applied immediately.** Each object ends with zero modifiers, so what you see is what gets exported.
-- **Typical values, not verified data.** Screw/insert sizes (`SCREWS`) and fit tolerances (`TOL_PRESS`, `TOL_SNUG`, `TOL_SLIDE`, `TOL_LOOSE`) are common starting points. Print a test piece and adjust them for your printer.
+- **Typical values, not verified data.** Screw/insert sizes (`SCREWS`), thread sizes (`thread_spec`, `THREADS`) and fit tolerances (`TOL_PRESS`, `TOL_SNUG`, `TOL_SLIDE`, `TOL_LOOSE`) are common starting points. Print a test piece and adjust them for your printer.
 
-The library covers primitives, edge rounding, Booleans, enclosure features (hollow boxes, bosses, lid lips, finger notches), screws/inserts/nut traps/magnets, snap hooks, vents, text, layout helpers, transforms, print-quality checks (manifold, min wall, overhang, bed fit, overlaps, pose sweeps for hinges and lids) and export (STL, 3MF, `.blend`). The full function list is in the [RC case README](projects/rc_remote_case/README.md#utils_3dpy--reusable-helper-library), and every function has a docstring.
+The library covers primitives (including revolved rings), edge rounding, Booleans, enclosure features (hollow boxes, bosses, lid lips, finger notches), screws/inserts/nut traps/magnets, printed threads (ISO metric and lamp-shade), snap hooks, vents, text, layout helpers, transforms, print-quality checks (manifold, min wall, overhang, bed fit, overlaps, pose sweeps for hinges and lids) and export (STL clean-up, STL, 3MF, `.blend`). The full function list is in the [RC case README](projects/rc_remote_case/README.md#utils_3dpy--reusable-helper-library), and every function has a docstring.
 
 Build scripts in a project folder find `utils_3d.py` on their own: they check `UTILS_DIR` at the top of the script, then the `UTILS_3D_DIR` environment variable, then the script's folder and every parent folder. A project inside `projects/` needs no setup.
 
@@ -156,6 +171,8 @@ Run these after any geometry change, and always before printing:
 - **Text → Reload** in Blender after editing a script on disk, or you run the old copy.
 - **Only one `utils_3d.py`.** If you keep an older copy somewhere else, the scripts still load the one next to them, but delete old copies anyway to avoid confusion.
 - **Exact Booleans fail on touching geometry.** Two shapes that only touch along a line, or share a face or vertex exactly, can leave open edges. Overlap them properly or offset them by 0.2–0.3 mm.
+- **Don't cut round parts.** A Boolean cut on a lathed mesh lands on the lathe's own edges and leaves open edges. Draw bores, grooves and recesses into a `make_revolved_ring` profile, and build threads with `make_threaded_tube`.
+- **Watertight in Blender is not a clean STL.** A union can leave vertices a hair apart that become one point in the STL. `fuse_copies` cleans them by default (`clean_for_stl`); call `clean_for_stl` yourself before exporting any other Boolean result, and always run `check_stl.py`.
 - **Tapering tips read as thin walls.** The min-wall check is an estimate; the sharp tip of a snap hook reads as ~0.2 mm by nature. The specs note such expected readings.
 - **`.stl`, `.3mf` and `exports/` are git-ignored.** They are build outputs; regenerate them from the scripts.
 
