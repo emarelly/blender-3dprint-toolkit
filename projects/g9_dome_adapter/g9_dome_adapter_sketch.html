@@ -2,7 +2,8 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=swap">
 <style>
-/* Layout: one drafting sheet. Section drawing first, then the facts beside/below it. */
+/* One drafting sheet: section drawing first, then the facts beside/below it.
+   The drawing is computed from the same values as g9_dome_adapter_build.py (spec v1.0, flat dia 36). */
 :root {
   --paper: #f3f5f2;
   --sheet: #fbfcfa;
@@ -11,53 +12,58 @@
   --line: #c9d1cf;
   --part: #2f6f8f;
   --ghost: #8a979e;
+  --seal: #3f8a52;
   --open: #b4462e;
   --font-body: "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --paper: #131a1f; --sheet: #182128; --ink: #dfe7ea; --muted: #93a2aa; --line: #2e3a42;
-  --part: #6fb3d2; --ghost: #74838b; --open: #ef8a6f; color-scheme: dark } }
+  --part: #6fb3d2; --ghost: #74838b; --seal: #7cc58e; --open: #ef8a6f; color-scheme: dark } }
 :root[data-theme="dark"] {
   --paper: #131a1f; --sheet: #182128; --ink: #dfe7ea; --muted: #93a2aa; --line: #2e3a42;
-  --part: #6fb3d2; --ghost: #74838b; --open: #ef8a6f; color-scheme: dark }
+  --part: #6fb3d2; --ghost: #74838b; --seal: #7cc58e; --open: #ef8a6f; color-scheme: dark }
 body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; }
-.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 20px; }
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
 header h1 { font-size: 1.6rem; margin: 0; text-wrap: balance; }
-header p { margin: 4px 0 0; color: var(--muted); max-width: 72ch; }
-.grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 20px; align-items: start; }
-@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 76ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
 .sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 4px; padding: 16px; min-width: 0; }
 .drawing { overflow-x: auto; }
-svg { display: block; width: 100%; height: auto; min-width: 560px; }
+svg { display: block; width: 100%; height: auto; min-width: 600px; }
 .cap { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin: 0 0 8px; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 td { padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
-td:last-child { font-family: var(--font-mono); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+td:last-child { font-family: var(--font-mono); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; padding-left: 12px; }
+tr.sub td { color: var(--muted); font-size: 13px; }
 .open { color: var(--open); font-weight: 600; }
 ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
 .key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin-top: 10px; }
 .key span { display: inline-flex; align-items: center; gap: 6px; }
 .sw { width: 22px; height: 10px; border: 1.5px solid var(--part); background: repeating-linear-gradient(45deg, var(--part) 0 1px, transparent 1px 5px); }
 .sw.g { border: 1.5px dashed var(--ghost); background: none; }
+.sw.s { border: none; width: 10px; border-radius: 50%; background: var(--seal); }
 .sw.o { border: none; height: 2px; background: var(--open); }
+.note { margin: 0; color: var(--muted); font-size: 14px; }
 </style>
 
 <div class="wrap">
   <header>
     <h1>G9 dome adapter: section sketch</h1>
-    <p>One printed PETG part that holds the glass. A Ø60 dome sits on top of the globe over the Ø40 cut top, with a Ø13 bore in its hub. Below it, a spigot screws into the glass's internal thread and carries the M10×1 pipe thread inside, so the pipe's short threaded end reaches it. The pipe end continues into the globe, and the G9 holder screws onto it to hold the bulb. Values in red are still unmeasured, so they are drawn as placeholders.</p>
+    <p>One printed PETG part that holds the glass. The spigot screws into the glass's internal G9 thread and has the M10×1 pipe thread inside. The Ø60 dome on top covers the globe's Ø36 flat cut top. A 32×2 O-ring in its flat underside seals on the glass. The pipe comes in from above, through the Ø13 bore and the M10×1 thread, and the G9 holder screws onto its end inside the globe.</p>
   </header>
 
   <div class="grid">
     <section class="sheet">
-      <p class="cap">Section A–A, as installed (pipe from above) · scale 5:1 on screen · mm</p>
-      <div class="drawing"><svg id="sec" viewBox="0 0 640 560" role="img" aria-label="Cross-section of the dome adapter on the glass globe"></svg></div>
+      <p class="cap">Section A–A, as modelled (O-ring just touching) · mm</p>
+      <div class="drawing"><svg id="sec" viewBox="0 0 860 440" role="img" aria-label="Cross-section of the dome adapter on the glass globe"></svg></div>
       <div class="key">
         <span><i class="sw"></i>printed part (cut)</span>
-        <span><i class="sw g"></i>pipe, G9 holder, glass, O-ring (not printed)</span>
-        <span><i class="sw o"></i>not measured yet</span>
+        <span><i class="sw s"></i>O-ring 32×2</span>
+        <span><i class="sw g"></i>pipe, nut, G9 holder, glass (not printed; glass wall schematic)</span>
+        <span><i class="sw o"></i>assumed, check with a test print</span>
       </div>
     </section>
 
@@ -65,32 +71,38 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
       <section class="sheet">
         <p class="cap">Dimensions</p>
         <table>
-          <tr><td>Dome outer diameter</td><td>Ø60</td></tr>
-          <tr><td>Top edge round</td><td>R8</td></tr>
-          <tr><td>Underside: follows the globe</td><td>R60 (Ø120)</td></tr>
-          <tr><td>Over the cut top of the glass</td><td>Ø40</td></tr>
+          <tr><td>Dome outer diameter / top edge round</td><td>Ø60 / R8</td></tr>
+          <tr><td>Dome height above the glass cut top</td><td>15</td></tr>
+          <tr><td>Flat underside = glass cut top</td><td>Ø36</td></tr>
+          <tr><td>Curved underside: globe surface +</td><td>1.0</td></tr>
+          <tr class="sub"><td>after tightening (flat on the glass)</td><td>0.5 gap</td></tr>
+          <tr><td>O-ring (face seal on the flat glass)</td><td>32×2 (Ø36 OD)</td></tr>
+          <tr><td>O-ring groove, in the flat underside</td><td>Ø29.8–35.2 × 1.5</td></tr>
+          <tr class="sub"><td>squeeze at the hard stop</td><td>25 %</td></tr>
+          <tr><td>Hub bore</td><td>Ø13</td></tr>
+          <tr><td>Washer recess on top</td><td>Ø15 × 1.5</td></tr>
+          <tr><td>Spigot length (+0.55 into the dome)</td><td>15</td></tr>
+          <tr><td>Pipe thread in the spigot, printed</td><td>M10×1 × 15</td></tr>
+          <tr class="sub"><td>major / minor (0.2 clearance)</td><td>Ø10.4 / 9.32</td></tr>
+          <tr><td>Spigot top bore (Z 0…1.05)</td><td>Ø12.4</td></tr>
           <tr><td>Adapter total length</td><td>30</td></tr>
-          <tr><td>Hub (in the dome): plain bore</td><td>Ø13 × 15</td></tr>
-          <tr><td>Spigot: printed pipe thread</td><td>M10×1 × 15</td></tr>
-          <tr><td>O-ring on the curved underside</td><td>40 × 3</td></tr>
-          <tr><td class="open">Spigot outer thread (glass thread): diameter, pitch</td><td class="open">? (inner Ø20)</td></tr>
-          <tr><td class="open">Thread depth in the glass</td><td class="open">?</td></tr>
-          <tr><td class="open">Glass wall thickness</td><td class="open">?</td></tr>
-          <tr><td class="open">Top pipe hole: plain / washer + nut</td><td class="open">?</td></tr>
+          <tr><td class="open">Glass thread on the spigot (common G9, not measured)</td><td class="open">M20.8×2</td></tr>
+          <tr class="sub"><td>printed major / minor, 2 mm lead-in</td><td>Ø20.6 / 19.0</td></tr>
         </table>
       </section>
       <section class="sheet">
         <p class="cap">Assembly order</p>
         <ol>
-          <li>Fit the O-ring into the groove under the dome.</li>
-          <li>Screw the adapter's spigot into the glass until the dome presses the O-ring onto the glass.</li>
-          <li>Feed the pipe (wires inside) down through the hub: it slides through the Ø13 bore and its threaded end screws into the M10×1 thread in the spigot, then out into the globe.</li>
-          <li>Connect the G9 holder and screw it onto the pipe end inside the globe. The pipe thread must be long enough for the 15 mm of adapter thread plus the holder.</li>
+          <li>Press the 32×2 O-ring into the groove in the flat underside.</li>
+          <li>Screw the spigot into the glass by hand until the flat underside rests on the glass (you feel it stop). The O-ring is then squeezed 25 %.</li>
+          <li>Feed the pipe (wires inside) down through the Ø13 bore and screw it through the M10×1 thread. About 5 mm of its 20 mm thread comes out below.</li>
+          <li>Screw the G9 holder onto the pipe end inside the globe. It holds the bulb only.</li>
+          <li>On top: a rubber washer in the Ø15 recess, then an M10×1 nut.</li>
         </ol>
       </section>
       <section class="sheet">
         <p class="cap">Printing</p>
-        <p style="margin:0">Flat top of the dome on the bed, spigot pointing up. No supports needed. Both threads print upright.</p>
+        <p class="note">Flat dome top on the bed, spigot pointing up, no supports, 0.12 mm layers. Both threads print upright. The first ~2 mm of the R8 edge overhang at the bed: add a brim if it curls. Print the spigot alone first to check the glass thread.</p>
       </section>
     </div>
   </div>
@@ -98,8 +110,9 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
 
 <script>
 (function () {
-  const S = 5, CX = 320, TOP = 70;               // 5 px per mm, axis x, dome top y
-  const X = r => CX + r * S, Y = z => TOP + z * S;
+  // Model coordinates: r (mm from the axis), Z (mm, up); Z = 0 is the glass's flat cut top.
+  const S = 5.2, CX = 430, Z0Y = 205;                 // px per mm, axis x, y of Z = 0
+  const X = r => CX + r * S, Y = z => Z0Y - z * S;
   const svg = document.getElementById('sec');
   const NS = 'http://www.w3.org/2000/svg';
   const add = (tag, attrs, text) => { const e = document.createElementNS(NS, tag);
@@ -110,86 +123,95 @@ ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
     '<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
     '<path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker>';
 
-  // z grows downward. Dome top z=0, cut top of the glass z=CUT, globe centre below it.
-  const R = 60, CUT = 15, ZC = CUT + Math.sqrt(R * R - 20 * 20);
-  const zs = r => ZC - Math.sqrt(R * R - r * r);      // globe outer surface at radius r
-  const GAP = 0.6;                                     // underside clearance above glass (sketch)
-  const G = 3.5;                                       // glass wall (placeholder)
-  const SP = 10.6;                                     // spigot thread major radius (placeholder)
+  // ---- values from g9_dome_adapter_build.py
+  const GR = 60, CUT_R = 18, DOME_R = 30, TOP = 15, EDGE_R = 8, FLAT = 0.5, CURVE_GAP = 1.0;
+  const BORE = 6.5, RECESS = 7.5, RECESS_D = 1.5, G0 = 14.9, G1 = 17.6, G_D = 1.5;
+  const SP0 = -15, SP1 = FLAT + 0.55, TOPBORE = 6.2;
+  const GL = { rmin: 9.5, rmax: 10.3, p: 2.0, lead: 2.0 }, PIPE = { rmin: 4.66, rmax: 5.2, p: 1.0 };
+  const ZC = -Math.sqrt(GR * GR - CUT_R * CUT_R);       // globe centre
+  const gz = r => ZC + Math.sqrt(GR * GR - r * r);      // globe outer surface
+  const fRound = t => 0.5 - 0.5 * Math.cos(2 * Math.PI * t);
+  const fIso = t => { t = ((t % 1) + 1) % 1; return t < .125 ? 1 : t < .4375 ? 1 - (t - .125) / .3125 : t < .6875 ? 0 : (t - .6875) / .3125; };
 
-  // Right half of the printed section
-  const pts = [[6.5, 0], [22, 0], 'ARC', [30, 8], [30, zs(30) - GAP]];
-  // curved underside with an O-ring groove centred at r = 25
-  for (let r = 30; r >= 20; r -= 0.5) {
-    const z = zs(r) - GAP;
-    if (r <= 26.5 && r >= 23.5) { if (r === 26.5) pts.push([r, z]); if (r === 26.5) pts.push([26.5, z - 2.3]); if (r === 23.5) { pts.push([23.5, z - 2.3]); pts.push([23.5, z]); } continue; }
-    pts.push([r, z]);
+  // Section outline of the fused part on one side (side = +1 right, -1 left; left is half a turn on)
+  function outline(side) {
+    const ph = side > 0 ? 0 : 0.5, P = [];
+    P.push([RECESS, TOP], [DOME_R - EDGE_R, TOP]);
+    for (let k = 1; k <= 16; k++) { const a = Math.PI / 2 * (1 - k / 16);
+      P.push([DOME_R - EDGE_R + EDGE_R * Math.cos(a), TOP - EDGE_R + EDGE_R * Math.sin(a)]); }
+    for (let k = 0; k <= 24; k++) { const r = DOME_R - (DOME_R - CUT_R) * k / 24; P.push([r, gz(r) + CURVE_GAP]); }
+    P.push([CUT_R, FLAT], [G1, FLAT], [G1, FLAT + G_D], [G0, FLAT + G_D], [G0, FLAT]);
+    for (let z = FLAT; z >= SP0 - 1e-9; z -= 0.125) {   // glass thread, with the lead-in at the tip
+      const amp = Math.min(1, (z - SP0) / GL.lead);
+      P.push([GL.rmin + (GL.rmax - GL.rmin) * amp * fRound(z / GL.p - ph), z]); }
+    for (let z = SP0; z <= 1e-9; z += 0.0625)           // M10x1 pipe thread
+      P.push([PIPE.rmin + (PIPE.rmax - PIPE.rmin) * fIso(z / PIPE.p - ph), z]);
+    P.push([TOPBORE, 0], [TOPBORE, SP1], [BORE, SP1], [BORE, TOP - RECESS_D], [RECESS, TOP - RECESS_D]);
+    return 'M ' + P.map(([r, z]) => `${X(side * r).toFixed(1)} ${Y(z).toFixed(1)}`).join(' L ') + ' Z';
   }
-  pts.push([SP, CUT - GAP]);
-  for (let z = CUT, i = 0; z <= 30; z += 0.75, i++) pts.push([i % 2 ? SP - 0.9 : SP, z]);  // spigot outer thread (pitch unknown)
-  for (let z = 30, i = 0; z >= 15; z -= 0.5, i++) pts.push([i % 2 ? 4.6 : 5.2, z]);      // M10x1 teeth in the spigot
-  pts.push([6.5, 15]);                                                                    // Ø13 bore in the hub above
-  function path(sign) {
-    let d = '';
-    pts.forEach((p, i) => {
-      if (p === 'ARC') { const n = pts[i + 1]; d += ` A ${8 * S} ${8 * S} 0 0 ${sign > 0 ? 1 : 0} ${X(sign * n[0])} ${Y(n[1])}`; return; }
-      if (i > 0 && pts[i - 1] === 'ARC') return;
-      d += (i ? ' L ' : 'M ') + X(sign * p[0]) + ' ' + Y(p[1]);
-    });
-    return d + ' Z';
-  }
-  [1, -1].forEach(s => add('path', { d: path(s), fill: 'url(#hatch)', style: 'stroke:var(--part)', 'stroke-width': 1.6, 'stroke-linejoin': 'round' }));
 
-  // Glass globe: outer arc, inner arc, neck with internal thread
+  // ---- glass globe (schematic wall 3 mm; neck thread zone ~14 mm deep)
   const gl = { fill: 'none', style: 'stroke:var(--ghost)', 'stroke-width': 1.6 };
+  const ZCI = ZC, gzi = r => ZCI + Math.sqrt((GR - 3) ** 2 - r * r);
   [1, -1].forEach(s => {
-    let d = `M ${X(s * 10)} ${Y(CUT)} L ${X(s * 20)} ${Y(CUT)}`;
-    for (let r = 20; r <= 48; r += 1) d += ` L ${X(s * r)} ${Y(zs(r))}`;
+    let d = `M ${X(s * 10.4)} ${Y(0)} L ${X(s * CUT_R)} ${Y(0)}`;
+    for (let r = CUT_R; r <= 50; r += 1) d += ` L ${X(s * r)} ${Y(gz(r))}`;
     add('path', Object.assign({ d }, gl));
-    let di = `M ${X(s * 10)} ${Y(CUT + G + 6)}`;
-    const zi = r => ZC - Math.sqrt((R - G) * (R - G) - r * r);
-    di += ` L ${X(s * 13)} ${Y(CUT + G + 6)} L ${X(s * 16)} ${Y(zi(16))}`;
-    for (let r = 17; r <= 46; r += 1) di += ` L ${X(s * r)} ${Y(zi(r))}`;
+    let di = `M ${X(s * 10.4)} ${Y(0)} L ${X(s * 10.4)} ${Y(-14)} L ${X(s * 14)} ${Y(-14)} L ${X(s * 15)} ${Y(gzi(15))}`;
+    for (let r = 16; r <= 48; r += 1) di += ` L ${X(s * r)} ${Y(gzi(r))}`;
     add('path', Object.assign({ d: di }, gl));
-    add('line', Object.assign({ x1: X(s * 10), y1: Y(CUT), x2: X(s * 10), y2: Y(CUT + G + 6) }, gl));
-    add('ellipse', { cx: X(s * 25), cy: Y(zs(25) - 1.3), rx: 1.5 * S, ry: 1.3 * S, style: 'fill:var(--ghost);opacity:.55' });
   });
-  add('text', { x: X(36), y: Y(zs(46) + 9), style: 'fill:var(--muted);font:12px var(--font-mono)' }, 'glass globe Ø120');
 
-  const ghost = { fill: 'none', style: 'stroke:var(--ghost)', 'stroke-width': 1.4, 'stroke-dasharray': '5 4' };
-  add('rect', Object.assign({ x: X(-5), y: Y(-14), width: 10 * S, height: (14 + 48) * S }, ghost));
-  add('text', { x: X(0), y: Y(-15.5), 'text-anchor': 'middle', style: 'fill:var(--muted);font:12px var(--font-mono)' }, 'pipe M10×1, wires inside');
-  add('rect', Object.assign({ x: X(-8), y: Y(36), width: 16 * S, height: 20 * S, rx: 6 }, ghost));
-  add('text', { x: X(0), y: Y(47), 'text-anchor': 'middle', style: 'fill:var(--muted);font:12px var(--font-mono)' }, 'G9 holder');
-  add('text', { x: X(0), y: Y(51), 'text-anchor': 'middle', style: 'fill:var(--muted);font:11px var(--font-mono)' }, 'on pipe end');
-  add('line', { x1: CX, y1: Y(-20), x2: CX, y2: Y(62), style: 'stroke:var(--muted)', 'stroke-width': 0.8, 'stroke-dasharray': '14 4 3 4' });
+  // ---- not printed: pipe, washer + nut, G9 holder
+  const ghost = { fill: 'none', style: 'stroke:var(--ghost)', 'stroke-width': 1.3, 'stroke-dasharray': '5 4' };
+  add('rect', Object.assign({ x: X(-5), y: Y(30), width: 10 * S, height: 50 * S }, ghost));       // pipe Z -20 .. 30
+  add('rect', Object.assign({ x: X(-7.3), y: Y(15.5), width: 14.6 * S, height: 2 * S }, ghost));   // rubber washer Z 13.5 .. 15.5
+  add('rect', Object.assign({ x: X(-8.5), y: Y(23.5), width: 17 * S, height: 8 * S }, ghost));     // nut Z 15.5 .. 23.5
+  add('rect', Object.assign({ x: X(-8), y: Y(-16), width: 16 * S, height: 22 * S, rx: 6 }, ghost)); // G9 holder Z -38 .. -16
+  const T = (x, y, s, o = {}) => add('text', { x, y, style: `fill:${o.c || 'var(--ink)'};font:${o.f || 12}px var(--font-mono)`, 'text-anchor': o.a || 'middle' }, s);
+  T(X(0), Y(-26), 'G9 holder', { c: 'var(--muted)' });
+  T(X(0), Y(-29.5), 'on pipe end', { c: 'var(--muted)', f: 11 });
 
-  const T = (x, y, s, o = {}) => add('text', { x, y, style: `fill:${o.c || 'var(--ink)'};font:12px var(--font-mono)`, 'text-anchor': o.a || 'middle' }, s);
+  // ---- the part (both halves) and the O-ring
+  [1, -1].forEach(s => add('path', { d: outline(s), fill: 'url(#hatch)', style: 'stroke:var(--part)', 'stroke-width': 1.5, 'stroke-linejoin': 'round' }));
+  [1, -1].forEach(s => add('circle', { cx: X(s * (G1 - 1)), cy: Y(1.0), r: 1.0 * S, style: 'fill:var(--seal)' }));
+  add('line', { x1: CX, y1: Y(34), x2: CX, y2: Y(-42), style: 'stroke:var(--muted)', 'stroke-width': 0.8, 'stroke-dasharray': '14 4 3 4' });
+
+  // ---- dimensions and leaders
+  const extL = (x1, y1, x2, y2) => add('line', { x1, y1, x2, y2, style: 'stroke:var(--line)', 'stroke-width': 0.8 });
   function dimH(r0, r1, z, label) { const y = Y(z);
     add('line', { x1: X(r0), y1: y, x2: X(r1), y2: y, style: 'stroke:var(--ink)', 'stroke-width': 0.9, 'marker-start': 'url(#ar)', 'marker-end': 'url(#ar)' });
     T((X(r0) + X(r1)) / 2, y - 5, label); }
-  function dimV(r, z0, z1, label, side = 1, c) { const x = X(r);
-    add('line', { x1: x, y1: Y(z0), x2: x, y2: Y(z1), style: `stroke:${c || 'var(--ink)'}`, 'stroke-width': 0.9, 'marker-start': 'url(#ar)', 'marker-end': 'url(#ar)' });
-    T(x + side * 6, (Y(z0) + Y(z1)) / 2 + 4, label, { a: side > 0 ? 'start' : 'end', c }); }
-  const extL = (x1, y1, x2, y2) => add('line', { x1, y1, x2, y2, style: 'stroke:var(--line)', 'stroke-width': 0.8 });
+  function dimV(r, z0, z1, label, side) { const x = X(r);
+    add('line', { x1: x, y1: Y(z0), x2: x, y2: Y(z1), style: 'stroke:var(--ink)', 'stroke-width': 0.9, 'marker-start': 'url(#ar)', 'marker-end': 'url(#ar)' });
+    T(x + side * 6, (Y(z0) + Y(z1)) / 2 + 4, label, { a: side > 0 ? 'start' : 'end' }); }
   function lead(r, z, tx, ty, s, c) {
     const right = tx > X(r);
     add('polyline', { points: `${X(r)},${Y(z)} ${tx},${ty} ${tx + (right ? 8 : -8)},${ty}`, fill: 'none', style: `stroke:${c || 'var(--ink)'}`, 'stroke-width': 0.9 });
     T(tx + (right ? 12 : -12), ty + 4, s, { a: right ? 'start' : 'end', c }); }
 
-  extL(X(-30), Y(8), X(-30), Y(-9)); extL(X(30), Y(8), X(30), Y(-9));
-  dimH(-30, 30, -8, 'Ø60');
-  extL(X(-20), Y(CUT), X(-20), Y(CUT - 4)); extL(X(20), Y(CUT), X(20), Y(CUT - 4));
-  // total and zones on the left
-  extL(X(-10), Y(0), X(-46), Y(0)); extL(X(-6.5), Y(30), X(-46), Y(30)); extL(X(-10.6), Y(CUT), X(-41), Y(CUT));
-  dimV(-45, 0, 30, '30', -1);
-  dimV(-40, 0, CUT, 'Ø13 × 15', 1);
-  dimV(-40, CUT, 30, 'M10×1 × 15', 1);
-  lead(29.3, 1.8, X(42), Y(-3), 'R8');
-  lead(25, zs(25) - 2.4, X(42), Y(10), 'O-ring 40×3 in groove');
-  lead(28, zs(28) - GAP, X(42), Y(22), 'underside R60 (globe)');
-  lead(18, CUT, X(42), Y(32), 'cut top Ø40', 'var(--muted)');
-  lead(SP, 26, X(42), Y(40), 'spigot thread ? (glass Ø20)', 'var(--open)');
-  lead(-10, CUT + 4, X(-44), Y(44), 'glass thread depth ?', 'var(--open)');
+  extL(X(-30), Y(7), X(-30), Y(33)); extL(X(30), Y(7), X(30), Y(33));
+  dimH(-30, 30, 32, 'Ø60');
+  extL(X(-22), Y(TOP), X(-67), Y(TOP)); extL(X(-10), Y(SP0), X(-67), Y(SP0)); extL(X(-31), Y(0), X(-61), Y(0));
+  dimV(-66, SP0, TOP, '30', -1);
+  dimV(-60, 0, TOP, 'dome 15', 1);
+  dimV(-60, SP0, 0, 'spigot 15', 1);
+
+  // right side, top to bottom
+  lead(27.7, 12.7, X(38), Y(19), 'R8');
+  lead(16.1, FLAT + G_D, X(38), Y(10), 'groove Ø29.8–35.2 × 1.5');
+  lead(G1 - 1, 1.6, X(38), Y(5), 'O-ring 32×2 (36 OD)', 'var(--seal)');
+  lead(CUT_R - 0.2, FLAT, X(38), Y(0), 'flat Ø36, 0.5 above glass');
+  lead(26, gz(26) + CURVE_GAP, X(38), Y(-5), 'curved: globe +1.0');
+  lead(10.1, -7, X(38), Y(-14), 'glass thread M20.8×2', 'var(--open)');
+  T(X(38) + 12, Y(-14) + 18, 'printed Ø20.6/19.0, assumed', { a: 'start', c: 'var(--open)', f: 11 });
+  lead(5.0, -11, X(38), Y(-24), 'pipe thread M10×1 × 15');
+  T(X(-30), Y(gz(30)) + 44, 'glass globe Ø120', { a: 'end', c: 'var(--muted)' });
+
+  // left side
+  lead(-8.5, 21, X(-34), Y(27), 'M10×1 nut + washer', 'var(--muted)');
+  lead(-RECESS, TOP - 0.8, X(-34), Y(21.5), 'recess Ø15 × 1.5');
+  lead(-BORE, 8, X(-34), Y(9), 'bore Ø13');
+  lead(-5, 26, X(-34), Y(33), 'pipe M10×1, wires inside', 'var(--muted)');
 })();
 </script>
