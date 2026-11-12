@@ -38,8 +38,8 @@ blender-3dprint-toolkit/
 ├── utils_3d.py            # the shared helper library (import it from any build script)
 ├── run_blender.py         # runs a script in Blender headless, from a normal terminal
 ├── CLAUDE.md              # project notes for Claude Code (conventions, verification steps, gotchas)
-├── .claude/skills/blender-model-spec/   # Claude Code skill: description -> spec -> build script -> verification
-│   └── reference/         # build template, spec template, checklist, verify_model.py, check_stl.py
+├── .claude/skills/blender-model-spec/   # Claude Code skill: description -> sketch -> spec -> build script -> verification
+│   └── reference/         # build template, spec template, checklist, material profiles, verify_model.py, check_stl.py
 └── projects/              # one folder per design
     ├── rc_remote_case/    # two-part RC remote enclosure (several generations of build scripts)
     ├── s24plus_phone_box/ # Samsung S24+ storage/charging box with a snap-in hinge and snap hooks
@@ -147,12 +147,13 @@ The skill [`blender-model-spec`](.claude/skills/blender-model-spec/SKILL.md) tur
 
 What happens:
 
-1. **Interview.** Claude asks questions until every dimension and decision is settled: size, parts, fastening, openings, tolerances, rounding, printer and bed. It never fills in a value silently. You can also say "you decide" for any item, and that is recorded in the spec. It always asks two structural questions:
+1. **Interview.** Claude asks questions until every dimension and decision is settled: size, parts, fastening, openings, tolerances, rounding, printer and bed. It never fills in a value silently. For the material it asks only what you print with (material, nozzle, layer height) and how the part is used (heat, outdoor, load, flexing), then **suggests** the material-driven values in one table: wall thickness in whole line widths, fit tolerances, hole compensation, thread clearance, overhang and bridge limits, snap-arm limits, and a different material if the use conditions call for it. You accept them or change the ones you want. You can also say "you decide" for any item, and that is recorded in the spec. It always asks two structural questions:
    - **One mesh per printed part, or every feature as its own mesh** (so you can still adjust ribs, hooks or bosses by hand in Blender afterwards).
    - **Ready for print or assembled** as the starting layout. Both layouts are always in the script, one `LAYOUT` setting apart.
-2. **Final summary.** A table of every parameter and where it came from. Nothing is generated until you confirm.
-3. **Spec + script.** It writes `projects/<name>/<name>_description.md` and `projects/<name>/<name>_build.py` from the templates.
-4. **Verification.** It builds headless, checks that the object list matches the spec, checks that every mesh is watertight, exports the STLs and checks them, runs any fit and motion checks, and fixes the spec and the script together until everything passes.
+2. **Sketch.** Before anything is implemented, Claude draws a dimensioned sketch from the agreed numbers (a section for round parts, top/front/side views for boxes) and asks whether it shows what you want. Missing values are marked in red. Corrections go back into the interview and the sketch is redrawn until you confirm it. A picture catches misunderstandings a table of numbers hides.
+3. **Final summary.** A table of every parameter and where it came from. Nothing is generated until you confirm.
+4. **Spec + script + sketch.** It writes `projects/<name>/<name>_description.md` and `projects/<name>/<name>_build.py` from the templates, and saves the confirmed sketch as `projects/<name>/<name>_sketch.html`.
+5. **Verification.** It builds headless, checks that the object list matches the spec, checks that every mesh is watertight, exports the STLs and checks them, runs any fit and motion checks, and fixes the spec and the script together until everything passes.
 
 ## How designs are verified
 

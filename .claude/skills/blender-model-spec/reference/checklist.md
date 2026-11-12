@@ -5,14 +5,15 @@ For each area: ask, or confirm it is stated. Skip a row only if it genuinely doe
 ## 1. Purpose and constraints
 - What is the object, what does it hold/do, who uses it? Indoor/outdoor, handled/mounted?
 - Contents to fit inside (PCB, battery, buttons, display, cables): exact outer dimensions, mounting-hole positions, connector positions, clearance needed around them.
-- Printer: bed size (x, y, z), nozzle, layer height, material (PLA/PETG/ABS/resin) — drives min wall, tolerances, overhang limits.
+- Printer: bed size (x, y, z).
+- **Material and process** (see `materials.md`): ask only material, nozzle, layer height and use conditions (heat °C, outdoor/UV/water, long-term load, flexing parts); then *suggest* the full parameter set from the profile table (line width, min/structural wall, floor layers, `TOL_*`, hole compensation, thread clearance and min pitch, overhang/bridge limits, bed-edge chamfer, snap-arm limits) in one table for the user to accept or change. Suggest a different material when the use conditions exceed it.
 
 ## 2. Overall form
 - Overall outer size (L × W × H) and which axis is which. Coordinate system: origin location, Z=0 = print bed.
 - One part or several? If several: how they split (lid/base, left/right), which is printed which way up.
 - **Mesh structure (always ask):** *one mesh per printed part* (features fused in, ready to print) or *every feature its own mesh* (ribs, bosses, hooks, knuckles… kept separate so they can be edited by hand in Blender; cuts applied to every part they pass through; an export mode fuses copies into one mesh per printed part). Ask which features count as "major" if the user wants only some split out.
 - **Scene layout (always ask, both are built into the script):** which one the script starts with — *ready for print* (parts laid out side by side on the bed, each in its print orientation) or *assembled* (parts in their assembled positions, to check fit). The other stays one setting away (`LAYOUT`).
-- Wall thickness (sides), floor/ceiling thickness, rim/seam design (flat rim, lip, overlap).
+- Wall thickness (sides), floor/ceiling thickness (options built from the material set: whole line widths / layers), rim/seam design (flat rim, lip, overlap).
 
 ## 3. Rounding and finish
 - Vertical corner radius, closed-face edge radius, seam-edge radius, inside corner radius (or "sharp"). Chamfer vs round.
@@ -31,7 +32,7 @@ For each area: ask, or confirm it is stated. Skip a row only if it genuinely doe
 - PCB/board standoffs (positions, height, bore), guide rails, ribs, battery holders, cable clips, nut traps, magnet pockets. Each: position, size, height, bore convention (blind / through).
 
 ## 7. Fit and tolerance
-- Clearance for sliding / press / snug fits (default constants TOL_PRESS 0.10, TOL_SNUG 0.15, TOL_SLIDE 0.25, TOL_LOOSE 0.40 — confirm which applies where).
+- Clearance for sliding / press / snug fits: values from the confirmed material set (`materials.md` §3; the library's generic TOL_PRESS 0.10 … TOL_LOOSE 0.40 are PLA values) — confirm which fit applies where.
 
 ## 8. Printing plan
 - Print orientation per part, supports allowed? max overhang angle, bed-fit check, splitting oversized parts, minimum wall to enforce in checks.
@@ -47,3 +48,4 @@ For each area: ask, or confirm it is stated. Skip a row only if it genuinely doe
 - Rounding radii consistent (edge ≤ corner; inner corner = corner − wall for even wall).
 - Part fits the bed; overhangs flagged; screw head fits its access hole; bore sizes match the screw table.
 - Stacked heights add up (boss tops vs rim vs mating part).
+- Material checks from `materials.md` §5: walls in whole line widths and ≥ MIN_WALL, heights in layers, thread pitch, use temperature, snap-arm strain, bridges/overhangs, outdoor/creep flags.

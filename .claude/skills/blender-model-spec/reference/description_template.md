@@ -7,7 +7,7 @@
 - **Units:** millimetres. Scene unit system METRIC, scale 0.001, length unit MILLIMETERS (`setup_units_mm()`).
 - **Coordinate system:** <origin; X = ..., Y = ..., Z = up, Z=0 is the print bed>.
 - **Library:** all geometry is built with `utils_3d.py` (found by the script via `UTILS_DIR` / `UTILS_3D_DIR` / parent folders); every Bevel/Boolean is applied, no modifiers remain.
-- **Files:** `<project folder>/<name>_description.md` (this spec) and `<project folder>/<name>_build.py`.
+- **Files:** `<project folder>/<name>_description.md` (this spec), `<project folder>/<name>_build.py` and `<project folder>/<name>_sketch.html` (dimensioned sketch confirmed by the user, drawn from the same values).
 - **Collection:** `<CollectionName>`.
 - **Printer / material:** <bed x×y×z, nozzle, layer height, material>.
 

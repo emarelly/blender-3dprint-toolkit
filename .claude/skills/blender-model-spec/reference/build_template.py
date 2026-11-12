@@ -78,13 +78,22 @@ LAYOUT = "print"               # "print"     = ready for print: every part on th
                                # "assembled" = parts in their assembled positions (to check how they fit)
 HIDE_OTHER_COLLECTIONS = True
 EXPORT = False                 # True: write .blend + STL + 3MF next to the script via export_all
-MIN_WALL = 1.2                 # mm, used by the report
 BED = (220, 220, 250)          # printer build volume x, y, z
+
+# Material / process (suggested from reference/materials.md, confirmed by the user). Dimensions that
+# depend on the material are computed from these names, so switching material = editing this group.
+MATERIAL = "PLA"
+LINE_W = 0.45                  # 0.4 nozzle
+LAYER_H = 0.2
+MIN_WALL = 2 * LINE_W          # thinnest wall allowed (used by the report)
+TOL_SLIDE = 0.25               # fit clearances on diameter (PLA profile)
+HOLE_COMP = 0.15               # added to modelled hole diameters (holes print undersize)
+OVERHANG_DEG = 50              # report: faces steeper than this from vertical are flagged
 
 X0, X1 = -20.0, 20.0           # outer extents
 Y0, Y1 = -30.0, 30.0
 Z0, Z1 = 0.0, 15.0
-WALL = 2.0
+WALL = 4 * LINE_W             # structural wall, whole line widths (1.8)
 CORNER_R = 4.0
 EDGE_R = 1.5
 SCREW = 'M3'                   # key in utils_3d.SCREWS
@@ -136,7 +145,7 @@ u.frame_all()                                           # no-op headless
 
 print({"status": "ok", "layout": LAYOUT, "collection": COLL_NAME, "object_count": len(coll.objects),
        "objects": sorted(o.name for o in coll.objects)})
-u.print_report(min_wall=MIN_WALL, bed=BED, overhang_deg=45)
+u.print_report(min_wall=MIN_WALL, bed=BED, overhang_deg=OVERHANG_DEG)
 
 if EXPORT:
     u.export_all(basename="demo_box", threemf=True)
