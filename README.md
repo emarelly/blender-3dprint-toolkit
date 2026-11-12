@@ -27,6 +27,10 @@ What you get from this:
 - **Verified before printing.** Every build reports open edges, non-manifold edges, thin walls and overlaps, so problems show up before you waste filament.
 - **Works well with AI.** A spec plus a script is something an AI assistant can read, write and check. This repo includes a [Claude Code](https://claude.com/claude-code) skill that turns a rough description into a full spec and a verified build script (see below).
 
+## Why not just prompt Blender via MCP?
+
+Connecting an LLM directly to Blender via MCP works for simple shapes, but breaks down on complex mechanical parts: dimensions drift, ad-hoc Boolean cuts on curved meshes leave open edges, and nothing verifies whether moving parts actually clear each other. By pairing a structured spec interview (`/blender-model-spec`), a deterministic bmesh helper library (`utils_3d.py`), and automated headless STL/kinematic checks, Claude produces reliable, parametric geometry you can actually print.
+
 ## What's in the repo
 
 ```
