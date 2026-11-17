@@ -1,0 +1,320 @@
+<title>Vacuum Bag Adapter Sketch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* One drafting sheet: two sections + end view first, then the facts beside/below.
+   Every shape is computed from the named values in the script (the build's SETTINGS names). */
+:root {
+  --paper: #f3f5f2;
+  --sheet: #fbfcfa;
+  --ink: #1d2a36;
+  --muted: #5d6b74;
+  --line: #c9d1cf;
+  --part: #2f6f8f;
+  --ghost: #8a979e;
+  --open: #b4462e;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #131a1f; --sheet: #182128; --ink: #dfe7ea; --muted: #93a2aa; --line: #2e3a42;
+  --part: #6fb3d2; --ghost: #74838b; --open: #ef8a6f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #131a1f; --sheet: #182128; --ink: #dfe7ea; --muted: #93a2aa; --line: #2e3a42;
+  --part: #6fb3d2; --ghost: #74838b; --open: #ef8a6f; color-scheme: dark }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 20px; }
+header h1 { font-size: 1.6rem; margin: 0; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 80ch; }
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 4px; padding: 16px; min-width: 0; }
+.drawing { overflow-x: auto; }
+svg { display: block; width: 100%; height: auto; min-width: 760px; }
+.cap { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin: 0 0 8px; }
+.cols { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 900px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+td { padding: 5px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td:last-child { font-family: var(--font-mono); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; padding-left: 12px; }
+tr.sub td { color: var(--muted); font-size: 13px; }
+.open { color: var(--open); font-weight: 600; }
+ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.key { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 22px; height: 10px; border: 1.5px solid var(--part); background: repeating-linear-gradient(45deg, var(--part) 0 1px, transparent 1px 5px); }
+.sw.g { border: 1.5px dashed var(--ghost); background: none; }
+.sw.o { border: none; height: 2px; background: var(--open); }
+.note { margin: 0; color: var(--muted); font-size: 14px; }
+.side { display: grid; gap: 20px; min-width: 0; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Vacuum bag adapter: sketch</h1>
+    <p>One printed PETG part. Its 39.5 × 17.3 oval spigot (copied from another vacuum adapter that fits) pushes 30 mm into the portable vacuum. A 20 mm transition turns the oval into a round neck. The round socket on top has the bag valve's real thread and screws onto the valve's male inlet (Ø23.5–25.1). That thread is two-start: two threads 180° apart, 1.0 mm between ridges, 2.0 mm lead, Ø24.4 / 26.6. The valve's rim seals flat against the Ø21 shoulder. Drawn in print orientation: oval end on the bed (Z = 0), thread end up.</p>
+    <p>v1.3: the two-start adapter (<code>vacuum_bag_adapter_2start_build.py</code>), tested and working, is drawn here. The first adapter (<code>vacuum_bag_adapter_build.py</code>) has a single-start P1.5 thread; the coupler below lets it fit the valve.</p>
+  </header>
+
+  <section class="sheet">
+    <p class="cap">Section A–A (long axis, XZ) · Section B–B (short axis, YZ) · End view from the oval side · mm</p>
+    <div class="drawing"><svg id="sk" viewBox="0 0 1200 480" role="img" aria-label="Two cross-sections and an end view of the vacuum bag adapter"></svg></div>
+    <div class="key">
+      <span><i class="sw"></i>printed part (cut)</span>
+      <span><i class="sw g"></i>vacuum opening and bag valve (not printed)</span>
+    </div>
+  </section>
+
+  <div class="cols">
+    <section class="sheet">
+      <p class="cap">Dimensions</p>
+      <table id="dims"></table>
+    </section>
+    <div class="side">
+      <section class="sheet">
+        <p class="cap">Use</p>
+        <ol>
+          <li>Screw the adapter onto the bag valve by hand until the valve rim stops on the shoulder (up to about 3½ turns).</li>
+          <li>Push the oval spigot into the vacuum, up to 30 mm deep.</li>
+          <li>Run the vacuum; the bag valve closes when you unscrew the adapter.</li>
+        </ol>
+      </section>
+      <section class="sheet">
+        <p class="cap">Printing</p>
+        <p class="note">PETG, 0.4 nozzle, 0.16 mm layers. Oval end on the bed, thread end up, no supports. The transition leans at most about 18° (limit 45°). The 1.0 mm lead-in chamfer at the oval tip doubles as the elephant's-foot chamfer. The seal shoulder faces up and prints flat. The two-start thread is the finest feature: its ridges are about 0.5 mm wide at half height, close to one line, so the report's min_wall flag on them is expected. Tune the fits with SPIGOT_ADJ / THREAD_ADJ.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="sheet">
+    <p class="cap">Coupler (vacuum_bag_coupler_build.py) · section through the axis · old P1.5 adapter → coupler → bag valve · mm</p>
+    <div class="drawing"><svg id="cp" viewBox="0 0 1200 380" role="img" aria-label="Section of the coupler between the old adapter's socket and the bag valve"></svg></div>
+    <p class="note">For the first adapter (single-start P1.5 socket). Screw the coupler's male end into that adapter until its end face stops on the adapter's Ø21 shoulder (about 4½ turns). Then screw the pair onto the bag valve until the valve rim stops on the coupler's shoulder (about 3½ turns). It prints male end down, with no supports: the outer chamfer is exactly 45°.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  // ---- values (same names as vacuum_bag_coupler_build.py; diameters from the main build)
+  const R_ROOT = 13.3, R_CREST = 12.2, SOCKET_R = 15.1, SH_R = 10.5, MOUTH_CH = 0.8, THREAD_LEN = 7;
+  const VALVE_R_MAX = 25.1 / 2;
+  const OLD_PITCH = 1.5, OLD_STARTS = 1, R_MALE_MIN = 23.5 / 2, R_MALE_MAX = 25.1 / 2, MALE_LEN = 7.5, MALE_CH = 0.4;
+  const NEW_PITCH = 1.0, NEW_STARTS = 2, SHOULDER_Z = 10.08;
+  const Z_CH_TOP = MALE_LEN + (SOCKET_R - R_MALE_MAX), Z_TOP = SHOULDER_Z + THREAD_LEN;   // 10.05 / 17.08
+  const fRound = t => 0.5 - 0.5 * Math.cos(2 * Math.PI * t);
+
+  const svg = document.getElementById('cp'), NS = 'http://www.w3.org/2000/svg';
+  const add = (tag, a, text) => { const e = document.createElementNS(NS, tag);
+    for (const k in a) e.setAttribute(k, a[k]); if (text) e.textContent = text; svg.appendChild(e); return e; };
+  add('defs', {}).innerHTML =
+    '<pattern id="hatch2" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+    '<line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--part)" stroke-width="1.2"/></pattern>' +
+    '<marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+    '<path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker>';
+  const S = 9, CX = 360, BED = 270, X = r => CX + r * S, Y = z => BED - z * S;
+  const T = (x, y, s, o = {}) => add('text', { x, y, style: `fill:${o.c || 'var(--ink)'};font:${o.f || 12}px var(--font-mono)`, 'text-anchor': o.a || 'middle' }, s);
+  const ink = { style: 'stroke:var(--ink)', 'stroke-width': 0.9, 'marker-start': 'url(#ar2)', 'marker-end': 'url(#ar2)' };
+  const ghost = { fill: 'none', style: 'stroke:var(--ghost)', 'stroke-width': 1.3, 'stroke-dasharray': '5 4' };
+  const ext = (x1, y1, x2, y2) => add('line', { x1, y1, x2, y2, style: 'stroke:var(--line)', 'stroke-width': 0.8 });
+  const pathOf = (P, side) => 'M ' + P.map(([r, z]) => `${X(side * r).toFixed(1)} ${Y(z).toFixed(1)}`).join(' L ');
+
+  function wall(side) {
+    const ang = side > 0 ? 0 : Math.PI, P = [];
+    for (let z = 0; z <= Z_CH_TOP + 1e-9; z += 0.05) {
+      const thr = R_MALE_MIN + (R_MALE_MAX - R_MALE_MIN) * fRound(z / OLD_PITCH - OLD_STARTS * ang / (2 * Math.PI));
+      P.push([Math.min(SOCKET_R, R_MALE_MIN - MALE_CH + z, Math.max(thr, R_MALE_MAX + (z - MALE_LEN))), z]);
+    }
+    P.push([SOCKET_R, Z_TOP]);
+    for (let z = Z_TOP; z >= SHOULDER_Z - 1e-9; z -= 0.05) {
+      const thr = R_CREST + (R_ROOT - R_CREST) * fRound(z / NEW_PITCH - NEW_STARTS * ang / (2 * Math.PI));
+      P.push([Math.max(thr, R_ROOT + MOUTH_CH - (Z_TOP - z)), z]);
+    }
+    P.push([SH_R, SHOULDER_Z], [SH_R, 0]);
+    return pathOf(P, side) + ' Z';
+  }
+
+  [1, -1].forEach(s => {
+    // old adapter's socket (below) and the bag valve (above), not printed
+    add('path', Object.assign({ d: pathOf([[SH_R, -6], [SH_R, -0.05], [R_CREST, -0.05], [R_CREST, 6.95 - MOUTH_CH - 0.3],
+      [R_ROOT + MOUTH_CH, 6.95], [SOCKET_R + 0.15, 6.95], [SOCKET_R + 0.15, -6]], s) }, ghost));
+    add('path', Object.assign({ d: pathOf([[10.0, Z_TOP + 6], [10.0, SHOULDER_Z + 0.05], [VALVE_R_MAX, SHOULDER_Z + 0.05], [VALVE_R_MAX, Z_TOP + 6]], s) }, ghost));
+    add('path', { d: wall(s), fill: 'url(#hatch2)', style: 'stroke:var(--part)', 'stroke-width': 1.5, 'stroke-linejoin': 'round' });
+  });
+  add('line', { x1: X(0), y1: Y(Z_TOP + 7), x2: X(0), y2: Y(-7), style: 'stroke:var(--muted)', 'stroke-width': 0.8, 'stroke-dasharray': '14 4 3 4' });
+
+  // heights on the left
+  const xl = -20, dv = (x, z0, z1, l) => { add('line', Object.assign({ x1: X(x), y1: Y(z0), x2: X(x), y2: Y(z1) }, ink)); T(X(x) - 6, (Y(z0) + Y(z1)) / 2 + 4, l, { a: 'end' }); };
+  [0, MALE_LEN, SHOULDER_Z, Z_TOP].forEach(z => ext(X(-SOCKET_R - 1), Y(z), X(xl - 0.5), Y(z)));
+  dv(xl, 0, MALE_LEN, 'male ' + MALE_LEN);
+  dv(xl, SHOULDER_Z, Z_TOP, 'female ' + THREAD_LEN);
+  [0, Z_TOP].forEach(z => ext(X(xl - 6.5), Y(z), X(xl - 12.5), Y(z)));
+  add('line', Object.assign({ x1: X(xl - 12), y1: Y(0), x2: X(xl - 12), y2: Y(Z_TOP) }, ink));
+  T(X(xl - 12) - 6, Y(Z_TOP / 2) + 4, Z_TOP.toFixed(2), { a: 'end' });
+  // widths
+  add('line', Object.assign({ x1: X(-SOCKET_R), y1: Y(Z_TOP + 7) - 4, x2: X(SOCKET_R), y2: Y(Z_TOP + 7) - 4 }, ink));
+  T(X(0) + 40, Y(Z_TOP + 7) - 9, 'Ø' + (2 * SOCKET_R).toFixed(1));
+  add('line', Object.assign({ x1: X(-SH_R), y1: Y(-7) + 14, x2: X(SH_R), y2: Y(-7) + 14 }, ink));
+  T(X(0) + 30, Y(-7) + 9, 'bore Ø' + 2 * SH_R);
+  T(X(0), Y(-7) + 32, 'Z = 0 print bed (male end)', { c: 'var(--muted)', f: 11 });
+
+  // leaders on the right
+  const lx = X(SOCKET_R + 9);
+  const lead = (r, z, ty, s, c) => { add('polyline', { points: `${X(r)},${Y(z)} ${lx},${ty} ${lx + 8},${ty}`, fill: 'none', style: `stroke:${c || 'var(--ink)'}`, 'stroke-width': 0.9 }); T(lx + 12, ty + 4, s, { a: 'start', c }); };
+  lead(VALVE_R_MAX + 0.3, Z_TOP + 4, Y(Z_TOP + 5), 'bag valve (male Ø23.5–25.1, two-start P1.0)', 'var(--muted)');
+  lead(SOCKET_R - 1.1, Z_TOP - 0.3, Y(Z_TOP + 1), `mouth chamfer ${MOUTH_CH} × 45°`);
+  lead(R_ROOT - 0.3, SHOULDER_Z + 3.5, Y(SHOULDER_Z + 4.5), `female Ø${2 * R_CREST}–${2 * R_ROOT}, P${NEW_PITCH.toFixed(1)}, ${NEW_STARTS} starts (lead ${NEW_PITCH * NEW_STARTS})`);
+  lead(SH_R + 0.8, SHOULDER_Z, Y(SHOULDER_Z + 1.2), `seal shoulder Ø${2 * SH_R} at Z ${SHOULDER_Z} (faces up)`);
+  lead(SOCKET_R - 1.2, Z_CH_TOP - 1.2, Y(Z_CH_TOP - 2.2), '45° chamfer (no support)');
+  lead(R_MALE_MAX - 0.2, 4.5, Y(5), `male Ø${2 * R_MALE_MIN}–${2 * R_MALE_MAX}, P${OLD_PITCH}, single-start`);
+  lead(R_MALE_MIN - 0.2, 0.15, Y(1.2), `lead-in ${MALE_CH} × 45°; end face seals on the old shoulder`);
+  lead(SOCKET_R + 0.15, -3, Y(-4), 'first adapter\'s socket (P1.5)', 'var(--muted)');
+})();
+</script>
+
+<script>
+(function () {
+  // ---- values (same names as the build's SETTINGS)
+  const OVAL_L = 39.5, OVAL_W = 17.3, OVAL_END = 8.0;    // spigot outside (v1.1, from an adapter that fits)
+  const SPIGOT_ADJ = 0.0, THREAD_ADJ = 0.0, WALL = 1.8, LEADIN = 1.0;
+  const SPIGOT_LEN = 30, TRANS_LEN = 20, NECK_LEN = 2, THREAD_LEN = 7;
+  const SOCKET_THREAD_ROOT_D = 26.6, SOCKET_THREAD_CREST_D = 24.4;   // copied from the bag's cover
+  const PITCH = 1.0, STARTS = 2;                                       // two-start: 1.0 between ridges, lead 2.0
+  const VALVE_THREAD_MAJOR = 25.1, VALVE_THREAD_MINOR = 23.5;                      // male inlet (fit check)
+  const SHOULDER_ID = 21.0, MOUTH_CH = 0.8;
+  // ---- derived
+  const R_ROOT = SOCKET_THREAD_ROOT_D / 2 + THREAD_ADJ, R_CREST = SOCKET_THREAD_CREST_D / 2 + THREAD_ADJ;   // 13.3 / 12.2
+  const SOCKET_R = R_ROOT + WALL, SH_R = SHOULDER_ID / 2;                                    // 15.1 / 10.5
+  const Z_T0 = SPIGOT_LEN, Z_T1 = Z_T0 + TRANS_LEN, Z_SH = Z_T1 + NECK_LEN, Z_TOP = Z_SH + THREAD_LEN;
+  const HL = OVAL_L / 2, HW = OVAL_W / 2, R_END = (HW * HW + OVAL_END * OVAL_END) / (2 * OVAL_END), CXA = HL - R_END;
+  const dOut = SPIGOT_ADJ / 2, dIn = dOut + WALL;
+  const tipX = d => CXA + R_END - d, halfW = d => HW - d;
+  const fRound = t => 0.5 - 0.5 * Math.cos(2 * Math.PI * t);
+
+  const svg = document.getElementById('sk'), NS = 'http://www.w3.org/2000/svg';
+  const add = (tag, a, text) => { const e = document.createElementNS(NS, tag);
+    for (const k in a) e.setAttribute(k, a[k]); if (text) e.textContent = text; svg.appendChild(e); return e; };
+  add('defs', {}).innerHTML =
+    '<pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+    '<line x1="0" y1="0" x2="0" y2="6" style="stroke:var(--part)" stroke-width="1.2"/></pattern>' +
+    '<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+    '<path d="M0,0 L10,5 L0,10 z" style="fill:var(--ink)"/></marker>';
+  const S = 5, BED = 420;
+  const T = (x, y, s, o = {}) => add('text', { x, y, style: `fill:${o.c || 'var(--ink)'};font:${o.f || 12}px var(--font-mono)`, 'text-anchor': o.a || 'middle' }, s);
+  const ink = { style: 'stroke:var(--ink)', 'stroke-width': 0.9, 'marker-start': 'url(#ar)', 'marker-end': 'url(#ar)' };
+  const ghost = { fill: 'none', style: 'stroke:var(--ghost)', 'stroke-width': 1.3, 'stroke-dasharray': '5 4' };
+  const ext = (x1, y1, x2, y2) => add('line', { x1, y1, x2, y2, style: 'stroke:var(--line)', 'stroke-width': 0.8 });
+
+  // one section view: half-extents of the oval along this cut (aOut/aIn), thread phase per side
+  function section(CX, aOut, aIn, angR) {
+    const X = r => CX + r * S, Y = z => BED - z * S;
+    const thr = (z, ang) => R_CREST + (R_ROOT - R_CREST) * fRound(z / PITCH - STARTS * ang / (2 * Math.PI));
+    function wall(side) {
+      const ang = side > 0 ? angR : angR + Math.PI, P = [];
+      P.push([aOut - LEADIN, 0], [aOut, LEADIN], [aOut, Z_T0], [SOCKET_R, Z_T1], [SOCKET_R, Z_TOP]);
+      for (let z = Z_TOP; z >= Z_SH - 1e-9; z -= 0.125)
+        P.push([Math.max(thr(z, ang), R_ROOT + MOUTH_CH - (Z_TOP - z)), z]);
+      P.push([SH_R, Z_SH], [SH_R, Z_T1], [aIn, Z_T0], [aIn, 0]);
+      return 'M ' + P.map(([r, z]) => `${X(side * r).toFixed(1)} ${Y(z).toFixed(1)}`).join(' L ') + ' Z';
+    }
+    return { X, Y, wall };
+  }
+
+  // ---------- Section A–A (XZ, long axis)
+  const A = section(270, tipX(dOut), tipX(dIn), 0);
+  const B = section(620, halfW(dOut), halfW(dIn), Math.PI / 2);
+  [[A, HL], [B, HW]].forEach(([V, nom]) => {
+    const { X, Y } = V;
+    [1, -1].forEach(s => {
+      add('path', Object.assign({ d: `M ${X(s * nom)} ${Y(0)} L ${X(s * nom)} ${Y(Z_T0)} L ${X(s * (nom + 5))} ${Y(Z_T0)}` }, ghost));
+      add('path', Object.assign({ d: `M ${X(s * 10.0)} ${Y(Z_TOP + 12)} L ${X(s * 10.0)} ${Y(Z_SH)} L ${X(s * VALVE_THREAD_MAJOR / 2)} ${Y(Z_SH)} L ${X(s * VALVE_THREAD_MAJOR / 2)} ${Y(Z_TOP + 12)}` }, ghost));
+      add('path', { d: V.wall(s), fill: 'url(#hatch)', style: 'stroke:var(--part)', 'stroke-width': 1.5, 'stroke-linejoin': 'round' });
+    });
+    add('line', { x1: X(0), y1: Y(Z_TOP + 14), x2: X(0), y2: Y(-3), style: 'stroke:var(--muted)', 'stroke-width': 0.8, 'stroke-dasharray': '14 4 3 4' });
+    add('line', { x1: X(-24), y1: Y(0), x2: X(24), y2: Y(0), style: 'stroke:var(--muted)', 'stroke-width': 1 });
+  });
+  {
+    const { X, Y } = A, ax = tipX(dOut);
+    T(X(0), Y(Z_TOP + 16), 'A–A  long axis', { c: 'var(--muted)' });
+    // heights on the left
+    [[0], [Z_T0], [Z_T1], [Z_SH], [Z_TOP]].forEach(([z]) => ext(X(-SOCKET_R - 1), Y(z), X(-31), Y(z)));
+    ext(X(-ax), Y(Z_T0), X(-31), Y(Z_T0));
+    const dv = (x, z0, z1, l) => { add('line', Object.assign({ x1: X(x), y1: Y(z0), x2: X(x), y2: Y(z1) }, ink)); T(X(x) - 6, (Y(z0) + Y(z1)) / 2 + 4, l, { a: 'end' }); };
+    dv(-26, 0, Z_T0, 'spigot 30'); dv(-26, Z_T0, Z_T1, 'trans. 20'); dv(-26, Z_SH, Z_TOP, 'thread ' + THREAD_LEN);
+    T(X(-26) - 6, Y(Z_T1 + 1) + 4, 'neck 2', { a: 'end', f: 11 });
+    add('line', Object.assign({ x1: X(-48), y1: Y(0), x2: X(-48), y2: Y(Z_TOP) }, ink));
+    T(X(-48) + 5, Y(Z_TOP / 2) - 30, String(Z_TOP), { a: 'start' });
+    ext(X(-48) - 4, Y(0), X(-31), Y(0)); ext(X(-48) - 4, Y(Z_TOP), X(-31), Y(Z_TOP));
+    // widths
+    add('line', Object.assign({ x1: X(-ax), y1: BED + 30, x2: X(ax), y2: BED + 30 }, ink)); T(X(0), BED + 25, (2 * ax).toFixed(1));
+    ext(X(-ax), Y(0) + 4, X(-ax), BED + 34); ext(X(ax), Y(0) + 4, X(ax), BED + 34);
+    add('line', Object.assign({ x1: X(-SOCKET_R), y1: Y(Z_TOP) - 30, x2: X(SOCKET_R), y2: Y(Z_TOP) - 30 }, ink));
+    T(X(0), Y(Z_TOP) - 35, 'Ø' + (2 * SOCKET_R).toFixed(1));
+    ext(X(-SOCKET_R), Y(Z_TOP) - 3, X(-SOCKET_R), Y(Z_TOP) - 34); ext(X(SOCKET_R), Y(Z_TOP) - 3, X(SOCKET_R), Y(Z_TOP) - 34);
+    T(X(ax) + 8, Y(10), 'vacuum', { a: 'start', c: 'var(--muted)', f: 11 });
+    T(X(ax) + 8, Y(10) + 13, 'opening', { a: 'start', c: 'var(--muted)', f: 11 });
+  }
+  {
+    const { X, Y } = B, lx = X(24);
+    T(X(0), Y(Z_TOP + 16), 'B–B  short axis', { c: 'var(--muted)' });
+    const lead = (r, z, ty, s, c) => { add('polyline', { points: `${X(r)},${Y(z)} ${lx},${ty} ${lx + 8},${ty}`, fill: 'none', style: `stroke:${c || 'var(--ink)'}`, 'stroke-width': 0.9 }); T(lx + 12, ty + 4, s, { a: 'start', c }); };
+    lead(VALVE_THREAD_MAJOR / 2 + 0.4, Z_TOP + 9, Y(Z_TOP + 12), `bag valve (male Ø${VALVE_THREAD_MINOR}–${VALVE_THREAD_MAJOR})`, 'var(--muted)');
+    lead(SOCKET_R - 1.2, Z_TOP - 0.3, Y(Z_TOP + 4), `mouth chamfer ${MOUTH_CH} × 45°`);
+    lead(R_ROOT - 0.3, Z_SH + 4.5, Y(Z_SH + 6), `thread Ø${(2 * R_CREST).toFixed(1)}–${(2 * R_ROOT).toFixed(1)} P${PITCH.toFixed(1)} round`);
+    T(lx + 12, Y(Z_SH + 6) + 17, `${STARTS} starts, lead ${STARTS * PITCH}, RH, ${THREAD_LEN} long`, { a: 'start', c: 'var(--muted)', f: 11 });
+    lead(SH_R + 0.8, Z_SH, Y(Z_SH - 4), `seal shoulder ID Ø${SHOULDER_ID}`);
+    lead(SOCKET_R, Z_T1 - 4, Y(Z_T1 - 10), 'oval → round loft');
+    lead(halfW(dOut), 15, Y(18), `spigot ${(2 * tipX(dOut)).toFixed(1)} × ${(2 * halfW(dOut)).toFixed(1)}`);
+    T(lx + 12, Y(18) + 17, `wall ${WALL} (4 lines)`, { a: 'start', f: 11, c: 'var(--muted)' });
+    lead(halfW(dOut) - 0.5, 0.5, Y(4), `lead-in ${LEADIN} × 45°`);
+    const hw = halfW(dOut);
+    add('line', Object.assign({ x1: X(-hw), y1: BED + 30, x2: X(hw), y2: BED + 30 }, ink)); T(X(0), BED + 25, (2 * hw).toFixed(1));
+    ext(X(-hw), Y(0) + 4, X(-hw), BED + 34); ext(X(hw), Y(0) + 4, X(hw), BED + 34);
+    T(X(0), BED + 52, 'Z = 0 print bed', { c: 'var(--muted)', f: 11 });
+  }
+
+  // ---------- End view (looking at the oval end)
+  {
+    const CX = 1075, CY = 250, X = x => CX + x * S, Yv = y => CY - y * S;
+    function oval(d) {
+      const R = R_END - d, w = HW - d, xc = CXA + Math.sqrt(R * R - w * w), a0 = Math.atan2(w, xc - CXA), P = [];
+      P.push([-xc, w], [xc, w]);
+      for (let k = 1; k < 24; k++) { const a = a0 - 2 * a0 * k / 24; P.push([CXA + R * Math.cos(a), R * Math.sin(a)]); }
+      P.push([xc, -w], [-xc, -w]);
+      for (let k = 1; k < 24; k++) { const a = a0 - 2 * a0 * k / 24; P.push([-CXA - R * Math.cos(a), -R * Math.sin(a)]); }   // left arc, bottom -> top
+      return 'M ' + P.map(([x, y]) => `${X(x).toFixed(1)} ${Yv(y).toFixed(1)}`).join(' L ') + ' Z';
+    }
+    add('circle', Object.assign({ cx: X(0), cy: Yv(0), r: SOCKET_R * S }, ghost, { style: 'stroke:var(--line)' }));
+    add('path', { d: oval(dOut) + ' ' + oval(dIn), 'fill-rule': 'evenodd', fill: 'url(#hatch)', style: 'stroke:var(--part)', 'stroke-width': 1.5 });
+    add('path', Object.assign({ d: oval(0) }, ghost));
+    T(X(0), Yv(SOCKET_R) - 30, 'end view (oval side)', { c: 'var(--muted)' });
+    const ax = tipX(dOut), hw = halfW(dOut);
+    add('line', Object.assign({ x1: X(-ax), y1: Yv(-HW) + 34, x2: X(ax), y2: Yv(-HW) + 34 }, ink)); T(X(0), Yv(-HW) + 29, (2 * ax).toFixed(1));
+    ext(X(-ax), Yv(0), X(-ax), Yv(-HW) + 38); ext(X(ax), Yv(0), X(ax), Yv(-HW) + 38);
+    // straight part and end-arc depth (spigot outline)
+    const xc0 = HL - OVAL_END;
+    add('line', Object.assign({ x1: X(-xc0), y1: Yv(HW) - 22, x2: X(xc0), y2: Yv(HW) - 22 }, ink)); T(X(0), Yv(HW) - 28, `straight ${(2 * xc0).toFixed(1)}`, { f: 11 });
+    add('line', Object.assign({ x1: X(xc0), y1: Yv(HW) - 22, x2: X(HL), y2: Yv(HW) - 22 }, ink)); T(X(xc0 + OVAL_END / 2), Yv(HW) - 28, String(OVAL_END), { f: 11 });
+    ext(X(xc0), Yv(HW), X(xc0), Yv(HW) - 26); ext(X(HL), Yv(0), X(HL), Yv(HW) - 26);
+    T(X(0), Yv(-HW) + 58, `ends R${R_END.toFixed(2)}, inner ${(2 * tipX(dIn)).toFixed(1)} × ${(2 * halfW(dIn)).toFixed(1)}`, { f: 11, c: 'var(--muted)' });
+    T(X(0), Yv(-HW) + 74, `socket Ø${(2 * SOCKET_R).toFixed(1)} behind (grey)`, { f: 11, c: 'var(--muted)' });
+  }
+
+  // ---------- dimension table
+  const rows = [
+    ['Oval spigot outside (from an adapter that fits), end arcs 8 deep', `${(2 * tipX(dOut)).toFixed(1)} × ${(2 * halfW(dOut)).toFixed(1)}`],
+    ['Oval spigot inside (wall 1.8)', `${(2 * tipX(dIn)).toFixed(1)} × ${(2 * halfW(dIn)).toFixed(1)}`, 'sub'],
+    ['Spigot length / lead-in chamfer', `${SPIGOT_LEN} / ${LEADIN} × 45°`],
+    ['Transition (ruled loft, oval → round)', `${TRANS_LEN}`],
+    ['Round neck (bore Ø21)', `${NECK_LEN}`],
+    ['Socket outside', `Ø${(2 * SOCKET_R).toFixed(1)}`],
+    ['Seal shoulder (Z = ' + Z_SH + ', faces up)', `ID Ø${SHOULDER_ID}`],
+    ['Printed internal thread (copied from the bag\'s cover), round', `Ø${(2 * R_CREST).toFixed(1)} / ${(2 * R_ROOT).toFixed(1)} P${PITCH.toFixed(1)} × ${THREAD_LEN}`],
+    [`Thread starts (180° apart) / lead per turn`, `${STARTS} / ${STARTS * PITCH}`, 'sub'],
+    ['Bag valve thread (male inlet, measured)', `Ø${VALVE_THREAD_MINOR}–${VALVE_THREAD_MAJOR}`, 'sub'],
+    ['Thread hand', 'right-hand'],
+    [`Mouth lead-in chamfer (mouth Ø${(2 * (R_ROOT + MOUTH_CH)).toFixed(1)})`, `${MOUTH_CH} × 45°`],
+    ['Total length', `${Z_TOP}`],
+  ];
+  document.getElementById('dims').innerHTML = rows.map(([a, b, c]) =>
+    `<tr class="${c === 'sub' ? 'sub' : ''}"><td class="${c === 'open' ? 'open' : ''}">${a}</td><td class="${c === 'open' ? 'open' : ''}">${b}</td></tr>`).join('');
+})();
+</script>

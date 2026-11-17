@@ -43,7 +43,8 @@ blender-3dprint-toolkit/
 └── projects/              # one folder per design
     ├── rc_remote_case/    # two-part RC remote enclosure (several generations of build scripts)
     ├── s24plus_phone_box/ # Samsung S24+ storage/charging box with a snap-in hinge and snap hooks
-    └── g9_dome_adapter/   # lamp adapter: M10x1 pipe to a G9 glass globe, with a sealed dome cover
+    ├── g9_dome_adapter/   # lamp adapter: M10x1 pipe to a G9 glass globe, with a sealed dome cover
+    └── vacuum_bag_adapter/ # portable-vacuum oval opening to a storage-bag valve thread
 ```
 
 ### Example projects
@@ -53,6 +54,7 @@ blender-3dprint-toolkit/
 | [`projects/s24plus_phone_box`](projects/s24plus_phone_box) | Made end to end with the skill. A box and a door with a snap-in stub-pin hinge (no separate pin), six snap hooks, phone ribs, a cable slot, honeycomb vents and an engraved label. The build checks that the door closes, the hinge swings, the latch holds and the phone fits at every extreme position. Also contains a **hinge test coupon** that loads its settings from the main script, and a **separate-parts build** (every feature its own mesh, for editing by hand in Blender, with an export mode that fuses them back into printable parts). |
 | [`projects/rc_remote_case`](projects/rc_remote_case) | A two-part RC remote case, built several ways: the original standalone scripts, a version refactored onto `utils_3d`, M4 screw variants and fully rounded shells. Its [README](projects/rc_remote_case/README.md) documents every file and lists the `utils_3d` functions. |
 | [`projects/g9_dome_adapter`](projects/g9_dome_adapter) | Made with the skill. A one-piece outdoor-lamp adapter: a spigot that screws into a glass globe's G9 thread and carries a printed M10×1 pipe thread inside, plus a Ø60 dome that covers the globe's cut top and seals it with an O-ring. Two printed threads and a lathed dome, built **without a single Boolean cut** (`make_threaded_tube`, `make_revolved_ring`), an export mode that fuses the features into one STL, and a [section sketch](projects/g9_dome_adapter/g9_dome_adapter_sketch.html) drawn from the same values. It went through a real test print: the first print revealed the flat and the O-ring had to shrink, and that change was two numbers in the SETTINGS block. |
+| [`projects/vacuum_bag_adapter`](projects/vacuum_bag_adapter) | Made with the skill, the first project to use its material step (PETG values suggested, then confirmed). An oval spigot that plugs into a portable vacuum, lofted into a round socket with a printed internal thread for a storage-bag valve. The whole part is **one ring tube** (`make_ring_tube`, oval outline given as a radius per angle), so there is no Boolean at all. The build checks the fit against a dummy valve thread. Test prints showed the valve's thread is **two-start**: there is a two-start variant of the adapter (`thread_radii(..., starts=2)`, built by running the main script with overrides) and a short coupler that lets the first, single-start adapter fit the valve. Includes test rings and a [sketch](projects/vacuum_bag_adapter/vacuum_bag_adapter_sketch.html) with two sections, an end view and the coupler. |
 
 ## Requirements
 

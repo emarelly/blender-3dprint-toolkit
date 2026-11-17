@@ -1246,12 +1246,14 @@ def thread_spec(name, internal=False, clearance=0.2):
     return dict(r_min=minor / 2 + c, r_max=major / 2 + c, pitch=pitch, form=form)
 
 
-def thread_radii(z, r_min, r_max, pitch, form='iso', amp=1.0, segments=96, left=False):
+def thread_radii(z, r_min, r_max, pitch, form='iso', amp=1.0, segments=96, left=False, starts=1):
     """One ring of `segments` radii of a thread surface at height z (see the section note).
-    amp (0..1) scales the thread height, e.g. for a lead-in."""
+    amp (0..1) scales the thread height, e.g. for a lead-in. starts > 1 makes a multi-start thread:
+    `pitch` stays the axial distance between neighbouring ridges, each helix advances
+    starts * pitch (the lead) per turn, and the starts are 360/starts degrees apart."""
     f = THREAD_FORMS[form] if isinstance(form, str) else form
     s = 1.0 if left else -1.0
-    return [r_min + (r_max - r_min) * amp * f(z / pitch + s * i / segments) for i in range(segments)]
+    return [r_min + (r_max - r_min) * amp * f(z / pitch + s * starts * i / segments) for i in range(segments)]
 
 
 def thread_z_steps(z0, z1, pitch, steps_per_pitch=16):
@@ -1314,7 +1316,8 @@ def _thread_rings(z0, z1, surface, segments, steps_per_pitch):
                 if leadout > 0:
                     amp = min(amp, (end - pz) / leadout)
                 new.append((pz, thread_radii(pz, sec['r_min'], sec['r_max'], sec['pitch'],
-                                             sec.get('form', 'iso'), amp, segments, sec.get('left', False))))
+                                             sec.get('form', 'iso'), amp, segments, sec.get('left', False),
+                                             sec.get('starts', 1))))
         if rings and rings[-1][1] == new[0][1]:     # same ring twice would make zero-area faces
             new = new[1:]
         rings += new
@@ -1330,7 +1333,8 @@ def make_threaded_tube(name, z0, z1, outer, inner, segments=96, steps_per_pitch=
       * a number: plain radius, or
       * a section dict: plain {'r': 6.2} or thread {'r_min', 'r_max', 'pitch', 'form' ('iso' |
         'round' | callable), optional 'leadin' / 'leadout' (mm over which the thread fades in at
-        the section's bottom / out at its top), 'left': True}; thread_spec() makes these, or
+        the section's bottom / out at its top), 'left': True, 'starts': 2 (multi-start, see
+        thread_radii)}; thread_spec() makes these, or
       * a list of section dicts from bottom to top; each but the last gives its top 'z1' (the last
         ends at z1). A change of radius between sections is a flat step.
     The thread phase is absolute in z, so tubes built with the same values mesh with each other.
